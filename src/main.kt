@@ -3,10 +3,10 @@ import com.google.ortools.linearsolver.MPSolver
 fun main() {
     System.loadLibrary("jniortools")
 
-    val myModel = Model(SmallParams)
+    val myModel = Model(StandardParams)
     println(myModel)
 
-    val orbit = myModel.MAP(setOf(Prey(0)), mapOf(Prey(2) to 1), 1.0, 2, 2)
+    val orbit = myModel.MAP(setOf(Prey(0)), mapOf(Prey(2) to 1), 1.0, 4, 4)
     println(orbit)
 }
 
