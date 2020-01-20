@@ -1,7 +1,17 @@
-typealias Multiset<T> = HashMultiset<T>
+package lib
 
-class HashMultiset<T>(val counts : MutableMap<T,Int> = HashMap()) : AbstractMutableSet<T>() {
+class HashMultiset<T>(override val counts : MutableMap<T,Int> = HashMap()) : AbstractMutableSet<T>(),
+    MutableMultiset<T> {
     override var size : Int = 0
+
+    override fun add(m : T) = add(m,1)
+
+
+    override fun add(m : T, n : Int) : Boolean {
+        counts.merge(m,n,Int::plus)
+        size += n
+        return true
+    }
 
     val distinctSet: Set<T>
         get() = counts.keys
@@ -18,15 +28,9 @@ class HashMultiset<T>(val counts : MutableMap<T,Int> = HashMap()) : AbstractMuta
         }
     }
 
+    constructor(array: Array<out T>): this(array.asList())
 
-    override fun add(m : T) = add(m,1)
 
-
-    fun add(m : T, n : Int) : Boolean {
-        counts.merge(m,n,Int::plus)
-        size += n
-        return true
-    }
 
 
     override fun remove(element : T) : Boolean {
@@ -34,7 +38,7 @@ class HashMultiset<T>(val counts : MutableMap<T,Int> = HashMap()) : AbstractMuta
     }
 
 
-    fun remove(element : T, n : Int) : Boolean {
+    override fun remove(element : T, n : Int) : Boolean {
         var removed = 0
         counts.compute(element) { _, count ->
             if(count == null) null else {
@@ -57,13 +61,10 @@ class HashMultiset<T>(val counts : MutableMap<T,Int> = HashMap()) : AbstractMuta
     }
 
 
-    fun count(m : T) : Int {
-        return counts.getOrDefault(m,0)
-    }
 
 
 //    override fun equals(other: Any?): Boolean {
-//        if(other is HashMultiset<*>) {
+//        if(other is lib.HashMultiset<*>) {
 //            return this.map == other.map
 //        }
 //        return false
@@ -71,7 +72,6 @@ class HashMultiset<T>(val counts : MutableMap<T,Int> = HashMap()) : AbstractMuta
 
 
     override fun toString() = counts.toString()
-
 
     private fun decrementSize() {--size}
 
@@ -91,38 +91,9 @@ class HashMultiset<T>(val counts : MutableMap<T,Int> = HashMap()) : AbstractMuta
     }
 
 
-    fun union(other : HashMultiset<T>) : HashMultiset<T> {
-        val result = HashMultiset(HashMap(counts))
-        other.counts.entries.forEach { result.counts.merge(it.key, it.value, Int::plus) }
-        return result
-    }
-
-    operator fun minus(other: Multiset<T>): HashMultiset<T> {
-        val result = HashMultiset<T>()
-        counts.forEach { entry ->
-            val newCount = entry.value - other.count(entry.key)
-            if(newCount > 0) result.add(entry.key, newCount)
-        }
-        return result
-    }
-
-    operator fun minus(other: Set<T>): HashMultiset<T> {
-        val result = HashMultiset<T>()
-        counts.forEach { entry ->
-            if(other.contains(entry.key)) {
-                if(entry.value > 1) result.add(entry.key, entry.value-1)
-            } else {
-                result.add(entry.key, entry.value)
-            }
-        }
-        return result
-    }
-
-
     override fun contains(element: T): Boolean {
         return counts.containsKey(element)
     }
-
 
     class MultiMutableIterator<A>(val mapIterator : MutableIterator<MutableMap.MutableEntry<A,Int>>, val decrementSize : ()->Unit) : MutableIterator<A> {
         private var currentEntry : MutableMap.MutableEntry<A,Int>? = null
@@ -152,9 +123,14 @@ class HashMultiset<T>(val counts : MutableMap<T,Int> = HashMap()) : AbstractMuta
         }
 
     }
+
+    override fun hashCode(): Int {
+        return counts.hashCode()
+    }
 }
 
 
-fun <T> hashMultisetOf(vararg elements : T) : HashMultiset<T> {
+fun <T>hashMultisetOf(vararg elements : T) : HashMultiset<T> {
     return HashMultiset(elements.asList())
 }
+

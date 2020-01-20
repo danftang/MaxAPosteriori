@@ -1,3 +1,5 @@
+package lib
+
 import java.util.*
 import kotlin.Comparator
 import kotlin.NoSuchElementException
@@ -149,10 +151,10 @@ open class MutableCategorical<T> : AbstractMutableMap<T, Double> {
     }
 
     open fun createLeaf(parent : InternalNode<T>?, category : T, probability : Double) : LeafNode<T> =
-            LeafNode(parent, category, probability)
+        LeafNode(parent, category, probability)
 
     private fun createNode(parent : InternalNode<T>?, child1: SumTreeNode<T>, child2: SumTreeNode<T>) =
-            InternalNode(parent, child1, child2)
+        InternalNode(parent, child1, child2)
 
 
     class InternalNode<T> : SumTreeNode<T> {
@@ -262,7 +264,7 @@ open class MutableCategorical<T> : AbstractMutableMap<T, Double> {
         }
 
         fun createInternalNode(parent : InternalNode<T>?, child1: SumTreeNode<T>, child2: SumTreeNode<T>) =
-                InternalNode(parent, child1, child2)
+            InternalNode(parent, child1, child2)
 
         // removes this and returns the root node
         fun remove(): SumTreeNode<T>? {

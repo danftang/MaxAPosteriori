@@ -69,6 +69,14 @@
         <root url="jar://$KOTLIN_BUNDLED$/lib/kotlin-stdlib-jdk8-sources.jar!/" />
       </SOURCES>
     </library>
+    <library name="org.apache.commons:commons-math3:3.6.1" type="repository">
+      <properties maven-id="org.apache.commons:commons-math3:3.6.1" />
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/apache/commons/commons-math3/3.6.1/commons-math3-3.6.1.jar!/" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+    </library>
     <library name="protobuf">
       <CLASSES>
         <root url="jar://$PROJECT_DIR$/lib/protobuf.jar!/" />

@@ -1,3 +1,4 @@
+import lib.toMutableMultiset
 import java.io.Serializable
 
 abstract class Agent(val pos: Int): Serializable {
@@ -23,12 +24,12 @@ abstract class Agent(val pos: Int): Serializable {
 
 
     fun action(rate: Double, vararg addedAgents: Agent) : Act<Agent> {
-        return Act(setOf(this), addedAgents.toSet(), rate)
+        return Act(setOf(this), addedAgents.toMutableMultiset(), rate)
     }
 
 
     fun interaction(rate: Double, otherAgent: Agent, vararg addedAgents: Agent) : Act<Agent> {
-        return Act(setOf(this, otherAgent), addedAgents.toSet(), rate)
+        return Act(setOf(this, otherAgent), addedAgents.toMutableMultiset(), rate)
     }
 
 

@@ -1,9 +1,14 @@
+import lib.HashMultiset
+import lib.Multiset
+import lib.MutableMultiset
+import lib.toMutableMultiset
+
 data class Act<AGENT>(val requirements: Set<AGENT>, val consequences: Multiset<AGENT>, val rate: Double) {
-    val additions: Multiset<AGENT>
+    val additions: MutableMultiset<AGENT>
         get() = consequences - requirements
 
     val deletions: Set<AGENT>
-        get() = requirements - consequences.distinctSet
+        get() = requirements - consequences.counts.keys
 
     // TODO: hmmm...
     fun commutesWith(other: Act<AGENT>): Boolean {
@@ -22,5 +27,15 @@ data class Act<AGENT>(val requirements: Set<AGENT>, val consequences: Multiset<A
         return requirements.fold(rate) {a, agent -> a*state.count(agent)}
     }
 
+    fun actOn(state: Multiset<AGENT>): MutableMultiset<AGENT> {
+        val result = state.toMutableMultiset()
+        requirements.forEach {
+            if(!result.remove(it)) return HashMultiset()
+        }
+        consequences.counts.forEach {
+            result.add(it.key, it.value)
+        }
+        return result
+    }
 
 }

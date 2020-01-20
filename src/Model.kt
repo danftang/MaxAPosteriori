@@ -1,6 +1,8 @@
 import com.google.ortools.linearsolver.MPSolver
 import com.google.ortools.linearsolver.MPVariable
+import lib.*
 import kotlin.math.ln
+import kotlin.random.Random
 
 class Model: Hamiltonian<Agent> {
     var X: Array<Array<MPVariable>>
@@ -18,7 +20,7 @@ class Model: Hamiltonian<Agent> {
     }
 
 
-    fun randomState(nAgents: Int): Multiset<Agent> {
+    fun randomState(nAgents: Int): MutableMultiset<Agent> {
         val state = HashMultiset<Agent>()
         val states = requirementIndex.keys
         while(state.size < nAgents) {
@@ -30,27 +32,43 @@ class Model: Hamiltonian<Agent> {
 
     fun samplePath(startState: Multiset<Agent>) {
         var state = startState
-        val categorical = MutableCategorical<Act<Agent>>()
+        val distribution = MutableCategorical<Act<Agent>>()
+        // initialise distribution
         startState.forEach { agent ->
             requirementIndex.get(agent)?.forEach { actIndex ->
                 val act = this[actIndex]
-                if(!categorical.containsKey(act)) {
+                if(!distribution.containsKey(act)) {
                     val rate = act.rateFor(state)
-                    if(rate != 0.0) categorical.put(act, rate)
+                    if(rate != 0.0) distribution[act] = rate
                 }
             }
         }
 
-        val nextAct = categorical.sample()
-        nextAct.additions.counts.forEach { (agent, count) ->
-            state.add(agent, count)
-            val rate = nextAct.rateFor(state)
-            if(rate != 0.0) categorical.put(nextAct, rate)
+        // execute an event
+        var time = 0.0
+        val nextAct = distribution.sample()
+        val totalRate = distribution.sum()
+        time += Random.nextExponential(totalRate)
+        state = nextAct.actOn(state)
+        nextAct.additions.distinctSet.forEach { agent ->
+            requirementIndex.get(agent)?.forEach { actIndex ->
+                val act = this[actIndex]
+                val rate = act.rateFor(state)
+                if(rate != 0.0) distribution[act] = rate
+            }
 
         }
         nextAct.deletions.forEach { agent ->
-
+            requirementIndex.get(agent)?.forEach { actIndex ->
+                val act = this[actIndex]
+                val rate = act.rateFor(state)
+                if(rate == 0.0)
+                    distribution.remove(act)
+                else
+                    distribution[act] = rate
+            }
         }
+        //TODO: ######## FINISH THIS ##########
     }
 
 
