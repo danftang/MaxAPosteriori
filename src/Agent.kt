@@ -24,12 +24,14 @@ abstract class Agent(val pos: Int): Serializable {
 
 
     fun action(rate: Double, vararg addedAgents: Agent) : Act<Agent> {
-        return Act(setOf(this), addedAgents.toMutableMultiset(), rate)
+        return Act(setOf(this), addedAgents.toMutableMultiset(), rate, this)
     }
 
 
     fun interaction(rate: Double, otherAgent: Agent, vararg addedAgents: Agent) : Act<Agent> {
-        return Act(setOf(this, otherAgent), addedAgents.toMutableMultiset(), rate)
+        val added = addedAgents.toMutableMultiset()
+        added.add(otherAgent) // require other agent is unchanged
+        return Act(setOf(this, otherAgent), added, rate, this)
     }
 
 

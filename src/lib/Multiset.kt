@@ -56,7 +56,7 @@ interface Multiset<T>: Set<T> {
     fun subtract(other: Iterable<T>): MutableMultiset<T> {
         val result = this.toMutableMultiset()
         other.forEach {
-            result.counts.computeIfPresent(it) { member, currentCount ->
+            result.counts.computeIfPresent(it) { _, currentCount ->
                 if(currentCount == 1) null else currentCount - 1
             }
         }
@@ -71,6 +71,26 @@ interface Multiset<T>: Set<T> {
         }
         return result
     }
+
+    override fun contains(element: T): Boolean {
+        return counts.containsKey(element)
+    }
+
+
+    fun isSubsetOf(other: Multiset<T>): Boolean {
+        this.counts.entries.forEach { if (it.value > other.count(it.key)) return false }
+        return true
+    }
+
+
+    override fun containsAll(elements: Collection<T>): Boolean {
+        return counts.keys.containsAll(elements)
+    }
+
+    override fun isEmpty(): Boolean {
+        return counts.isEmpty()
+    }
+
 
 }
 

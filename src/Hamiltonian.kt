@@ -24,6 +24,14 @@ open class Hamiltonian<AGENT>: ArrayList<Act<AGENT>>() {
         return requirementsMap
     }
 
+    fun toPrimaryRequirementMap(): Map<AGENT, Set<Int>> {
+        val requirementsMap = HashMap<AGENT, HashSet<Int>>()
+        this.forEachIndexed { i, act ->
+            requirementsMap.getOrPut(act.primaryAgent,{HashSet()}).add(i)
+        }
+        return requirementsMap
+    }
+
     fun samplePathFromPrior(startState: Set<Agent>, time: Double) {
 
     }

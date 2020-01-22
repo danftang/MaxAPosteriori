@@ -7,7 +7,12 @@ import kotlin.random.Random
 class Model: Hamiltonian<Agent> {
     var X: Array<Array<MPVariable>>
     val requirementIndex: Map<Agent, Set<Int>>
+    val primaryRequirementIndex: Map<Agent, Set<Int>>
     val deltaIndex: Map<Agent, Set<Int>>
+    val allStates: Set<Agent>
+        get() = requirementIndex.keys
+
+    data class Observation(val realState: Multiset<Agent>, val observation: Multiset<Agent>)
 
     constructor(params: Params) : super() {
         for(i in 0..params.GRIDSIZESQ) {
@@ -17,74 +22,115 @@ class Model: Hamiltonian<Agent> {
         X = emptyArray()
         requirementIndex = this.toRequirementMap()
         deltaIndex = this.toDeltaMap()
+        primaryRequirementIndex = this.toPrimaryRequirementMap()
     }
 
 
     fun randomState(nAgents: Int): MutableMultiset<Agent> {
         val state = HashMultiset<Agent>()
-        val states = requirementIndex.keys
         while(state.size < nAgents) {
-            state.add(states.random())
+            state.add(allStates.random())
         }
         return state
     }
 
-
-    fun samplePath(startState: Multiset<Agent>) {
-        var state = startState
+    fun sampleContinuousTimePath(startState: Multiset<Agent>, time: Double): List<Pair<Double,Multiset<Agent>>> {
         val distribution = MutableCategorical<Act<Agent>>()
         // initialise distribution
-        startState.forEach { agent ->
-            requirementIndex.get(agent)?.forEach { actIndex ->
-                val act = this[actIndex]
-                if(!distribution.containsKey(act)) {
-                    val rate = act.rateFor(state)
-                    if(rate != 0.0) distribution[act] = rate
-                }
-            }
-        }
+        startState.forEach { distribution.updateRates(it, startState) }
 
-        // execute an event
-        var time = 0.0
-        val nextAct = distribution.sample()
-        val totalRate = distribution.sum()
-        time += Random.nextExponential(totalRate)
-        state = nextAct.actOn(state)
-        nextAct.additions.distinctSet.forEach { agent ->
-            requirementIndex.get(agent)?.forEach { actIndex ->
-                val act = this[actIndex]
-                val rate = act.rateFor(state)
-                if(rate != 0.0) distribution[act] = rate
-            }
+        // initialise path
+        val path = ArrayList<Pair<Double,Multiset<Agent>>>((time*distribution.sum()).toInt())
+        path.add(Pair(0.0,startState))
 
+        // generate events
+        var t = Random.nextExponential(distribution.sum())
+        var state = startState
+        while(t < time) {
+            val nextAct = distribution.sample()
+            state = nextAct.actOn(state)
+            path.add(Pair(t,state))
+            nextAct.modifiedAgents().forEach { distribution.updateRates(it, state) }
+            t += Random.nextExponential(distribution.sum())
         }
-        nextAct.deletions.forEach { agent ->
-            requirementIndex.get(agent)?.forEach { actIndex ->
-                val act = this[actIndex]
-                val rate = act.rateFor(state)
-                if(rate == 0.0)
-                    distribution.remove(act)
-                else
-                    distribution[act] = rate
-            }
-        }
-        //TODO: ######## FINISH THIS ##########
+        return path
     }
 
 
+    // timestepping
+    fun sampleTimesteppingPath(startState: Multiset<Agent>, nSteps: Int): List<Multiset<Agent>> {
+        val distribution = MutableCategorical<Act<Agent>>()
 
-    fun MAP(startState: Set<Agent>, observedState: Map<Agent,Int>, time: Double, nFactors: Int, nActs: Int): List<Act<Agent>> {
+        // initialise path
+        val path = ArrayList<Multiset<Agent>>(nSteps)
+        path.add(startState)
+
+        // generate events
+        var state = startState
+//        val orbit = ArrayList<ArrayList<Act<Agent>>>()
+        for(t in 1..nSteps) {
+            val lastState = state
+//            val acts = ArrayList<Act<Agent>>()
+            lastState.forEach {agent ->
+                val choices = MutableCategorical<Act<Agent>>()
+                primaryRequirementIndex[agent]?.forEach {actIndex ->
+                    choices[this[actIndex]] = this[actIndex].rateFor(lastState)
+                }
+//                println("Choices are ${choices}")
+                if(choices.size == 0) println("no choices for agent $agent from ${primaryRequirementIndex[agent]}")
+                val nextAct = choices.sample()
+//                acts.add(nextAct)
+                state = nextAct.actOn(state)
+            }
+//            println("acts = $acts")
+//            println("state = $state")
+            path.add(state)
+        }
+        return path
+    }
+
+
+    fun generateObservations(startState: Multiset<Agent>, nSteps: Int, pObserve: Double): List<Observation> {
+        val observations = ArrayList<Observation>(nSteps)
+
+        sampleTimesteppingPath(startState, nSteps).forEach { realState ->
+            val observedState = HashMultiset<Agent>()
+            realState.forEach { agent ->
+                if(Random.nextDouble() < pObserve) {
+                    observedState.add(agent)
+                }
+            }
+            observations.add(Observation(realState, observedState))
+        }
+        return(observations)
+    }
+
+
+    fun MutableCategorical<Act<Agent>>.updateRates(agent: Agent, state: Multiset<Agent>) {
+        requirementIndex[agent]?.forEach { actIndex ->
+            val act = this@Model[actIndex]
+            val rate = act.rateFor(state)
+            if(rate == 0.0)
+                this.remove(act)
+            else
+                this[act] = rate
+        }
+    }
+
+    fun MAP(startState: Multiset<Agent>, observations: List<Multiset<Agent>>): List<List<Act<Agent>>> {
         val solver = MPSolver("MySolver", MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING)
         val termsPerFactor = this.size
+        val nFactors = observations.size - 1
         X = Array(nFactors) {
             solver.makeBoolVarArray(termsPerFactor)
         }
 
-        addOneTermPerFactorConstraint(solver)
+//        addOneTermPerFactorConstraint(solver)
 //        addFactorCommutationConstraint(solver)
-        addSatisfyObservationConstraint(solver, observedState, startState)
-        addSatisfyRequirementsConstraint(solver, startState)
-        addTotalActsConstraint(solver, nActs)
+        addSatisfyObservationConstraint(solver, observations, startState)
+        addSatisfySecondaryRequirementsConstraint(solver, startState)
+        addSatisfyPrimaryRequirementsConstraint(solver, startState)
+//        addTotalActsConstraint(solver, nActs)
 
         // set objective function
         val obj = solver.objective()
@@ -101,12 +147,21 @@ class Model: Hamiltonian<Agent> {
         val solveState = solver.solve()
         println("solveState = $solveState")
 
-        val orbit = ArrayList<Act<Agent>>()
-        for(factor in nFactors-1 downTo 0) {
+//        val orbit = ArrayList<Act<Agent>>()
+//        for(factor in nFactors-1 downTo 0) {
+//            for(term in 0 until termsPerFactor) {
+//                if(X[factor][term].solutionValue() == 1.0) orbit.add(this[term])
+//            }
+//        }
+        val orbit = ArrayList<ArrayList<Act<Agent>>>(observations.size)
+        for(factor in 0 until nFactors) {
+            val step = ArrayList<Act<Agent>>()
             for(term in 0 until termsPerFactor) {
-                if(X[factor][term].solutionValue() == 1.0) orbit.add(this[term])
+                if(X[factor][term].solutionValue() == 1.0) step.add(this[term])
             }
+            orbit.add(step)
         }
+
         return orbit
     }
 
@@ -138,42 +193,68 @@ class Model: Hamiltonian<Agent> {
         }
     }
 
-    private fun addSatisfyObservationConstraint(solver: MPSolver, observedState: Map<Agent,Int>, startState: Set<Agent>) {
+    private fun addSatisfyObservationConstraint(solver: MPSolver, observations: List<Multiset<Agent>>, startState: Multiset<Agent>) {
         println("adding observation constraint")
-        for ((agent, nObserved) in observedState) {
-            val nTotal = nObserved - if(startState.contains(agent)) 1.0 else 0.0
-            val satisfyObservation = solver.makeConstraint(nTotal, nTotal)
-            for (term in deltaIndex.getOrDefault(agent, emptySet())) {
-                val d = this[term].delta(agent)
-                for (factor in X.indices) {
-                    satisfyObservation.setCoefficient(X[factor][term], d * 1.0)
+        for(observedFactor in 1 until observations.size) {
+            for ((agent, nObserved) in observations[observedFactor].counts) {
+                val nTotal = (nObserved - startState.count(agent)).toDouble()
+                val satisfyObservation = solver.makeConstraint(nTotal, Double.POSITIVE_INFINITY)
+                for (term in deltaIndex.getOrDefault(agent, emptySet())) {
+                    val d = this[term].delta(agent)
+                    for (factor in observedFactor-1 downTo 0) {
+                        satisfyObservation.setCoefficient(X[factor][term], d * 1.0)
+                    }
                 }
             }
         }
     }
 
     // all requirements in each factor must be satisfied by consequences of factors to the right
-    private fun addSatisfyRequirementsConstraint(solver: MPSolver, startState: Set<Agent>) {
+    private fun addSatisfySecondaryRequirementsConstraint(solver: MPSolver, startState: Multiset<Agent>) {
         println("adding requirement satisfaction constraint")
+        val MAX_OVERLAP = 100.0
         val states = requirementIndex.keys
         for(state in states) {
             for(factor in X.indices) {
                 val satisfyRequirement = solver.makeConstraint(
-                    if(startState.contains(state)) -1.0 else 0.0,
+                    -MAX_OVERLAP*startState.count(state).toDouble(),
                     Double.POSITIVE_INFINITY
                 )
                 for(term in requirementIndex.getOrDefault(state, emptySet())) {
+                    if(state != this[term].primaryAgent) satisfyRequirement.setCoefficient(X[factor][term], -1.0)
+                }
+                for(term in deltaIndex.getOrDefault(state, emptySet())) {
+                    val d = this[term].delta(state)
+                    for(satFactor in factor-1 downTo 0) {
+                        satisfyRequirement.setCoefficient(X[satFactor][term], d * MAX_OVERLAP)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun addSatisfyPrimaryRequirementsConstraint(solver: MPSolver, startState: Multiset<Agent>) {
+        println("adding primary requirement satisfaction constraint")
+        val states = requirementIndex.keys
+        for(state in states) {
+            for(factor in X.indices) {
+                val satisfyRequirement = solver.makeConstraint(
+                    -startState.count(state).toDouble(),
+                    -startState.count(state).toDouble()
+                )
+                for(term in primaryRequirementIndex.getOrDefault(state, emptySet())) {
                     satisfyRequirement.setCoefficient(X[factor][term], -1.0)
                 }
                 for(term in deltaIndex.getOrDefault(state, emptySet())) {
                     val d = this[term].delta(state)
-                    for(satFactor in factor+1 until X.size) {
+                    for(satFactor in factor-1 downTo 0) {
                         satisfyRequirement.setCoefficient(X[satFactor][term], d * 1.0)
                     }
                 }
             }
         }
     }
+
 
     // total number of acts is exactly nActs
     private fun addTotalActsConstraint(solver: MPSolver, nActs: Int) {

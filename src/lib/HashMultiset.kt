@@ -1,7 +1,6 @@
 package lib
 
-class HashMultiset<T>(override val counts : MutableMap<T,Int> = HashMap()) : AbstractMutableSet<T>(),
-    MutableMultiset<T> {
+class HashMultiset<T>(override val counts : MutableMap<T,Int> = HashMap()): MutableMultiset<T> {
     override var size : Int = 0
 
     override fun add(m : T) = add(m,1)
@@ -13,8 +12,7 @@ class HashMultiset<T>(override val counts : MutableMap<T,Int> = HashMap()) : Abs
         return true
     }
 
-    val distinctSet: Set<T>
-        get() = counts.keys
+    constructor(initialCapacity : Int) : this(HashMap(initialCapacity))
 
     constructor(container : Iterable<T>) : this() {
         container.forEach {
@@ -71,8 +69,6 @@ class HashMultiset<T>(override val counts : MutableMap<T,Int> = HashMap()) : Abs
 //    }
 
 
-    override fun toString() = counts.toString()
-
     private fun decrementSize() {--size}
 
     ////////////////////////////////////////////////////////
@@ -91,9 +87,6 @@ class HashMultiset<T>(override val counts : MutableMap<T,Int> = HashMap()) : Abs
     }
 
 
-    override fun contains(element: T): Boolean {
-        return counts.containsKey(element)
-    }
 
     class MultiMutableIterator<A>(val mapIterator : MutableIterator<MutableMap.MutableEntry<A,Int>>, val decrementSize : ()->Unit) : MutableIterator<A> {
         private var currentEntry : MutableMap.MutableEntry<A,Int>? = null
@@ -127,6 +120,22 @@ class HashMultiset<T>(override val counts : MutableMap<T,Int> = HashMap()) : Abs
     override fun hashCode(): Int {
         return counts.hashCode()
     }
+
+    override fun toString(): String {
+        //  String conversion
+        val it: Iterator<T> = this.iterator()
+        if (this.isEmpty()) return "[]"
+        val sb = StringBuilder()
+        sb.append('[')
+        while (true) {
+            val e = it.next()
+            sb.append(if (e === this) "(this Collection)" else e)
+            if (!it.hasNext()) return sb.append(']').toString()
+            sb.append(',').append(' ')
+        }
+    }
+
+
 }
 
 

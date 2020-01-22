@@ -1,13 +1,44 @@
 import com.google.ortools.linearsolver.MPSolver
+import lib.HashMultiset
+import lib.Multiset
 
 fun main() {
     System.loadLibrary("jniortools")
 
+    // generate observation path
     val myModel = Model(StandardParams)
-    println(myModel)
+    val startState = myModel.randomState(60)
+    val observations = myModel.generateObservations(startState, 4, 0.5)
+    println("Real orbit")
+    observations.forEach {println(it.realState)}
+    println("Observations")
+    observations.forEach {println(it.observation)}
 
-    val orbit = myModel.MAP(setOf(Prey(0)), mapOf(Prey(2) to 1), 1.0, 4, 4)
-    println(orbit)
+    val mapOrbit = myModel.MAP(startState, observations.map {it.observation})
+    println("Map orbit")
+    mapOrbit.forEach { println(it) }
+
+    // re-construct state
+    val history = ArrayList<Multiset<Agent>>()
+    history.add(startState)
+    var state = startState
+    mapOrbit.forEach { acts ->
+        val lastState = state
+        acts.forEach { act ->
+            if(act.rateFor(lastState) == 0.0) throw(IllegalStateException("Impossible orbit!"))
+            state = act.actOn(state)
+        }
+        history.add(state)
+    }
+    println("history is")
+    history.forEach { println(it) }
+
+    // ensure MAP history fits observation
+    for(frame in observations.indices) {
+        if(!observations[frame].observation.isSubsetOf(history[frame]))
+            throw(IllegalStateException("MAP history does not match observations"))
+    }
+
 }
 
 fun testSolve() {
