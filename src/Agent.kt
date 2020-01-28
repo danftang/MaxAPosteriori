@@ -35,9 +35,9 @@ abstract class Agent(val pos: Int): Serializable {
     }
 
 
-    fun translate(transVector: Int, gridSize: Int): Agent {
-        val newX = (pos + transVector + gridSize).rem(gridSize)
-        val newY = (transVector.div(gridSize) + pos.div(gridSize) + gridSize).rem(gridSize)
-        return copyAt(newY*gridSize + newX)
-    }
+//    fun translate(transVector: Int, gridSize: Int): Agent {
+//        val newX = (pos + transVector + gridSize).rem(gridSize)
+//        val newY = (transVector.div(gridSize) + pos.div(gridSize) + gridSize).rem(gridSize)
+//        return copyAt(newY*gridSize + newX)
+//    }
 }

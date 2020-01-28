@@ -8,6 +8,8 @@ import java.lang.IllegalStateException
 data class Act<AGENT>(val requirements: Set<AGENT>, val consequences: Multiset<AGENT>, val rate: Double, val primaryAgent: AGENT) {
     val additions: MutableMultiset<AGENT>
         get() = consequences - requirements
+    val secondaryRequirements: Set<AGENT>
+        get() = requirements.minus(primaryAgent)
 
 //    val deletions: Set<AGENT>
 //        get() = requirements - consequences.counts.keys

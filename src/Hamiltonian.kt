@@ -32,6 +32,17 @@ open class Hamiltonian<AGENT>: ArrayList<Act<AGENT>>() {
         return requirementsMap
     }
 
+    fun toConsequenceMap(): Map<AGENT, Set<Int>> {
+        val consequenceMap = HashMap<AGENT, HashSet<Int>>()
+        this.forEachIndexed { i, act ->
+            act.consequences.forEach { consequence ->
+                consequenceMap.getOrPut(consequence,{HashSet()}).add(i)
+            }
+        }
+        return consequenceMap
+    }
+
+
     fun samplePathFromPrior(startState: Set<Agent>, time: Double) {
 
     }

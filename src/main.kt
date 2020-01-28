@@ -1,13 +1,14 @@
 import com.google.ortools.linearsolver.MPSolver
 import lib.HashMultiset
 import lib.Multiset
+import javax.swing.plaf.multi.MultiScrollBarUI
 
 fun main() {
     System.loadLibrary("jniortools")
 
     // generate observation path
     val myModel = Model(StandardParams)
-    val startState = myModel.randomState(60)
+    val startState = myModel.randomState(100)
     val observations = myModel.generateObservations(startState, 4, 0.5)
     println("Real orbit")
     observations.forEach {println(it.realState)}
@@ -18,16 +19,22 @@ fun main() {
     println("Map orbit")
     mapOrbit.forEach { println(it) }
 
-    // re-construct state
+    // re-construct known state
     val history = ArrayList<Multiset<Agent>>()
     history.add(startState)
     var state = startState
     mapOrbit.forEach { acts ->
+//        println("Reconstructing state from $state")
         val lastState = state
+        val primaryRequirements = HashMultiset<Agent>()
+        state = HashMultiset<Agent>()
         acts.forEach { act ->
-            if(act.rateFor(lastState) == 0.0) throw(IllegalStateException("Impossible orbit!"))
-            state = act.actOn(state)
+            // make sure primary an secondary requirements are satisfied
+            if(act.rateFor(lastState) == 0.0) throw(IllegalStateException("Impossible orbit! Applying $act to state $lastState"))
+            primaryRequirements.add(act.primaryAgent)
+            state.addAll(act.consequences)
         }
+        if(!primaryRequirements.isSubsetOf(lastState)) throw(IllegalStateException("Illegal orbit. Primary requirements not satisfied."))
         history.add(state)
     }
     println("history is")
