@@ -6,6 +6,11 @@ interface MutableMultiset<T>: MutableSet<T>, Multiset<T> {
     fun add(m: T, n: Int): Boolean
     fun remove(m: T, n: Int): Boolean
 
+    fun addAll(multiset: Multiset<T>): Boolean {
+        multiset.counts.forEach { counts.merge(it.key, it.value, Int::plus) }
+        return true
+    }
+
     override fun addAll(elements: Collection<T>): Boolean {
         var success = true
         elements.forEach {
@@ -58,4 +63,16 @@ fun <T>Iterable<T>.toMutableMultiset(): MutableMultiset<T> {
 
 fun <T>Array<out T>.toMutableMultiset(): MutableMultiset<T> {
     return HashMultiset(this)
+}
+
+fun <T>Collection<T>.toMultiset(): Multiset<T> {
+    return this.toMutableMultiset()
+}
+
+fun <T>Iterable<T>.toMultiset(): Multiset<T> {
+    return this.toMutableMultiset()
+}
+
+fun <T>Array<out T>.toMultiset(): Multiset<T> {
+    return this.toMutableMultiset()
 }

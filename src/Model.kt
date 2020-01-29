@@ -1,4 +1,3 @@
-import com.google.ortools.linearsolver.MPConstraint
 import com.google.ortools.linearsolver.MPSolver
 import com.google.ortools.linearsolver.MPVariable
 import lib.*
@@ -8,12 +7,6 @@ import kotlin.random.Random
 class Model: Hamiltonian<Agent> {
     val solver: MPSolver
     var X: Array<Map<Int,MPVariable>> // integer variables associated with every act in every timestep
-    val requirementIndex: Map<Agent, Set<Int>>
-    val primaryRequirementIndex: Map<Agent, Set<Int>>
-    val consequenceIndex: Map<Agent, Set<Int>>
-    val deltaIndex: Map<Agent, Set<Int>>
-    val allStates: Set<Agent>
-        get() = requirementIndex.keys
 
     data class Observation(val realState: Multiset<Agent>, val observation: Multiset<Agent>)
 
@@ -23,10 +16,6 @@ class Model: Hamiltonian<Agent> {
             Prey(i).hamiltonian(this, params)
         }
         X = emptyArray()
-        requirementIndex = this.toRequirementMap()
-        consequenceIndex = this.toConsequenceMap()
-        deltaIndex = this.toDeltaMap()
-        primaryRequirementIndex = this.toPrimaryRequirementMap()
         solver = MPSolver("HamiltonianSolver", MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING)
     }
 
@@ -40,7 +29,7 @@ class Model: Hamiltonian<Agent> {
     }
 
     fun sampleContinuousTimePath(startState: Multiset<Agent>, time: Double): List<Pair<Double,Multiset<Agent>>> {
-        val distribution = MutableCategorical<Act<Agent>>()
+        val distribution = MutableCategorical<Event<Agent>>()
         // initialise distribution
         startState.forEach { distribution.updateRates(it, startState) }
 
@@ -76,7 +65,7 @@ class Model: Hamiltonian<Agent> {
             val lastState = state
 //            val acts = ArrayList<Act<Agent>>()
             lastState.forEach {agent ->
-                val choices = MutableCategorical<Act<Agent>>()
+                val choices = MutableCategorical<Event<Agent>>()
                 primaryRequirementIndex[agent]?.forEach {actIndex ->
                     choices[this[actIndex]] = this[actIndex].rateFor(lastState)
                 }
@@ -110,7 +99,7 @@ class Model: Hamiltonian<Agent> {
     }
 
 
-    fun MutableCategorical<Act<Agent>>.updateRates(agent: Agent, state: Multiset<Agent>) {
+    fun MutableCategorical<Event<Agent>>.updateRates(agent: Agent, state: Multiset<Agent>) {
         requirementIndex[agent]?.forEach { actIndex ->
             val act = this@Model[actIndex]
             val rate = act.rateFor(state)
@@ -121,7 +110,7 @@ class Model: Hamiltonian<Agent> {
         }
     }
 
-    fun MAP(startState: Multiset<Agent>, observations: List<Multiset<Agent>>): List<List<Act<Agent>>> {
+    fun MAP(startState: Multiset<Agent>, observations: List<Multiset<Agent>>): List<List<Event<Agent>>> {
         val termsPerFactor = this.size
         val nFactors = observations.size - 1
 
@@ -155,9 +144,9 @@ class Model: Hamiltonian<Agent> {
         val solveState = solver.solve()
         println("solveState = $solveState")
 
-        val orbit = ArrayList<ArrayList<Act<Agent>>>(observations.size)
+        val orbit = ArrayList<ArrayList<Event<Agent>>>(observations.size)
         for(factor in 0 until nFactors) {
-            val step = ArrayList<Act<Agent>>()
+            val step = ArrayList<Event<Agent>>()
             for((actIndex, indicator) in X[factor]) {
                 for(i in 1..indicator.solutionValue().toInt()) step.add(this[actIndex])
             }
@@ -326,7 +315,7 @@ class Model: Hamiltonian<Agent> {
     }
 
 
-    private fun addSatisfyRequirementsConstraint(startState: Multiset<Agent>, maxOverlap: Int, requirements: (Act<Agent>) -> Set<Agent>) {
+    private fun addSatisfyRequirementsConstraint(startState: Multiset<Agent>, maxOverlap: Int, requirements: (Event<Agent>) -> Set<Agent>) {
         for(factor in X.indices) {
             val requirementFootprint = HashSet<Agent>()
             X[factor].keys.flatMapTo(requirementFootprint) { actIndex -> requirements(this[actIndex]) }

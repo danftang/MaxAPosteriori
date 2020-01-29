@@ -12,6 +12,7 @@ class HashMultiset<T>(override val counts : MutableMap<T,Int> = HashMap()): Muta
         return true
     }
 
+
     constructor(initialCapacity : Int) : this(HashMap(initialCapacity))
 
     constructor(container : Iterable<T>) : this() {

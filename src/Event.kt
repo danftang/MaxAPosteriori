@@ -1,11 +1,9 @@
-import lib.HashMultiset
 import lib.Multiset
 import lib.MutableMultiset
 import lib.toMutableMultiset
 import java.lang.IllegalArgumentException
-import java.lang.IllegalStateException
 
-data class Act<AGENT>(val requirements: Set<AGENT>, val consequences: Multiset<AGENT>, val rate: Double, val primaryAgent: AGENT) {
+class Event<AGENT>(val requirements: Set<AGENT>, val consequences: Multiset<AGENT>, val rate: Double, val primaryAgent: AGENT) {
     val additions: MutableMultiset<AGENT>
         get() = consequences - requirements
     val secondaryRequirements: Set<AGENT>
@@ -14,14 +12,6 @@ data class Act<AGENT>(val requirements: Set<AGENT>, val consequences: Multiset<A
 //    val deletions: Set<AGENT>
 //        get() = requirements - consequences.counts.keys
 
-    // TODO: hmmm...
-    fun commutesWith(other: Act<AGENT>): Boolean {
-        if(
-            this.consequences.intersect(other.requirements).isEmpty() &&
-            other.consequences.intersect(this.requirements).isEmpty()
-        ) return true
-        return false
-    }
 
     fun delta(agent: AGENT): Int {
         return consequences.count(agent) - (if(requirements.contains(agent)) 1 else 0)

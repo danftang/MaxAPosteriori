@@ -2,14 +2,18 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="74e226ce-4e81-4f5a-b3f8-14355773cdf7" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/test/AgentTests.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/MaxAPosteriori.iml" beforeDir="false" afterPath="$PROJECT_DIR$/MaxAPosteriori.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/MAPOrbitSolver.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/ModelState.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/StartState.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Timestep.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test/TestMAPOrbitSolver.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/MaxAPosteriori.iws" beforeDir="false" afterPath="$PROJECT_DIR$/MaxAPosteriori.iws" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Act.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/Act.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Act.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/Event.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Agent.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/Agent.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Hamiltonian.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/Hamiltonian.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Model.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/Model.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/HashMultiset.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/HashMultiset.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/MutableMultiset.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/MutableMultiset.kt" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -76,13 +80,25 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Kotlin.MainKt">
+  <component name="RunManager" selected="JUnit.TestMAPOrbitSolver.basicFunctionalityTest">
     <configuration name="AgentTests.movementTest" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
       <module name="MaxAPosteriori" />
       <option name="PACKAGE_NAME" value="" />
       <option name="MAIN_CLASS_NAME" value="AgentTests" />
       <option name="METHOD_NAME" value="movementTest" />
       <option name="TEST_OBJECT" value="method" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="TestMAPOrbitSolver.basicFunctionalityTest" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+      <module name="MaxAPosteriori" />
+      <option name="PACKAGE_NAME" value="" />
+      <option name="MAIN_CLASS_NAME" value="TestMAPOrbitSolver" />
+      <option name="METHOD_NAME" value="basicFunctionalityTest" />
+      <option name="TEST_OBJECT" value="method" />
+      <option name="VM_PARAMETERS" value="-ea -Djava.library.path=$PROJECT_DIR$/lib" />
+      <option name="PARAMETERS" value="" />
       <method v="2">
         <option name="Make" enabled="true" />
       </method>
@@ -100,8 +116,14 @@
         <option name="Make" enabled="true" />
       </method>
     </configuration>
+    <list>
+      <item itemvalue="JUnit.AgentTests.movementTest" />
+      <item itemvalue="JUnit.TestMAPOrbitSolver.basicFunctionalityTest" />
+      <item itemvalue="Kotlin.MainKt" />
+    </list>
     <recent_temporary>
       <list>
+        <item itemvalue="JUnit.TestMAPOrbitSolver.basicFunctionalityTest" />
         <item itemvalue="Kotlin.MainKt" />
         <item itemvalue="JUnit.AgentTests.movementTest" />
       </list>
@@ -136,7 +158,8 @@
       <workItem from="1579712858549" duration="25000" />
       <workItem from="1580121924458" duration="4007000" />
       <workItem from="1580136765905" duration="9621000" />
-      <workItem from="1580216544535" duration="13621000" />
+      <workItem from="1580216544535" duration="14003000" />
+      <workItem from="1580301345325" duration="20586000" />
     </task>
     <servers />
   </component>
