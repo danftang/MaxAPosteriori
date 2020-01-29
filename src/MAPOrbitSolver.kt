@@ -33,8 +33,6 @@ class MAPOrbitSolver<AGENT> {
     }
 
 
-
-
     private fun calculatePotentialEvents() {
         timesteps.forEach { it.addForwardEvents() }
         var forwardRequirements: Set<AGENT> = emptySet()

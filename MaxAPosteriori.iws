@@ -2,18 +2,12 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="74e226ce-4e81-4f5a-b3f8-14355773cdf7" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/src/MAPOrbitSolver.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/ModelState.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/StartState.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Timestep.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/test/TestMAPOrbitSolver.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test/TestMPSolver.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/MaxAPosteriori.iws" beforeDir="false" afterPath="$PROJECT_DIR$/MaxAPosteriori.iws" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Act.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/Event.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Agent.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/Agent.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Hamiltonian.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/Hamiltonian.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/MAPOrbitSolver.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/MAPOrbitSolver.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Model.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/Model.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/HashMultiset.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/HashMultiset.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/MutableMultiset.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/MutableMultiset.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.kt" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -49,7 +43,7 @@
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
     <property name="nodejs_package_manager_path" value="npm" />
-    <property name="project.structure.last.edited" value="Libraries" />
+    <property name="project.structure.last.edited" value="Modules" />
     <property name="project.structure.proportion" value="0.15" />
     <property name="project.structure.side.proportion" value="0.2" />
   </component>
@@ -80,7 +74,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="JUnit.TestMAPOrbitSolver.basicFunctionalityTest">
+  <component name="RunManager" selected="Kotlin.MainKt">
     <configuration name="AgentTests.movementTest" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
       <module name="MaxAPosteriori" />
       <option name="PACKAGE_NAME" value="" />
@@ -96,6 +90,18 @@
       <option name="PACKAGE_NAME" value="" />
       <option name="MAIN_CLASS_NAME" value="TestMAPOrbitSolver" />
       <option name="METHOD_NAME" value="basicFunctionalityTest" />
+      <option name="TEST_OBJECT" value="method" />
+      <option name="VM_PARAMETERS" value="-ea -Djava.library.path=$PROJECT_DIR$/lib" />
+      <option name="PARAMETERS" value="" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="TestMPSolver.testSolve" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+      <module name="MaxAPosteriori" />
+      <option name="PACKAGE_NAME" value="" />
+      <option name="MAIN_CLASS_NAME" value="TestMPSolver" />
+      <option name="METHOD_NAME" value="testSolve" />
       <option name="TEST_OBJECT" value="method" />
       <option name="VM_PARAMETERS" value="-ea -Djava.library.path=$PROJECT_DIR$/lib" />
       <option name="PARAMETERS" value="" />
@@ -119,12 +125,14 @@
     <list>
       <item itemvalue="JUnit.AgentTests.movementTest" />
       <item itemvalue="JUnit.TestMAPOrbitSolver.basicFunctionalityTest" />
+      <item itemvalue="JUnit.TestMPSolver.testSolve" />
       <item itemvalue="Kotlin.MainKt" />
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="JUnit.TestMAPOrbitSolver.basicFunctionalityTest" />
         <item itemvalue="Kotlin.MainKt" />
+        <item itemvalue="JUnit.TestMPSolver.testSolve" />
+        <item itemvalue="JUnit.TestMAPOrbitSolver.basicFunctionalityTest" />
         <item itemvalue="JUnit.AgentTests.movementTest" />
       </list>
     </recent_temporary>
@@ -159,7 +167,7 @@
       <workItem from="1580121924458" duration="4007000" />
       <workItem from="1580136765905" duration="9621000" />
       <workItem from="1580216544535" duration="14003000" />
-      <workItem from="1580301345325" duration="20586000" />
+      <workItem from="1580301345325" duration="21879000" />
     </task>
     <servers />
   </component>
