@@ -1,17 +1,17 @@
 import com.google.ortools.linearsolver.MPSolver
 import lib.Multiset
+import java.lang.IllegalStateException
 import java.util.*
 
 class MAPOrbitSolver<AGENT> {
     val timesteps = ArrayDeque<Timestep<AGENT>>()
     val startState: ModelState<AGENT>
     val hamiltonian: Hamiltonian<AGENT>
-    val solver: MPSolver
+//    var solver: MPSolver
 
     constructor(hamiltonian: Hamiltonian<AGENT>, startState: Multiset<AGENT>) {
         this.hamiltonian = hamiltonian
         this.startState = StartState(startState)
-        solver = MPSolver("HamiltonianSolver", MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING)
     }
 
 
@@ -21,15 +21,37 @@ class MAPOrbitSolver<AGENT> {
     }
 
 
-    fun solve() {
-        calculatePotentialEvents()
-        timesteps.forEach { it.setupProblem(solver) }
-        solver.objective().setMaximization()
-        println("solving for ${solver.numVariables()} variables and ${solver.numConstraints()} constraints")
-        val solveState = solver.solve()
-        println("solveState = $solveState")
+    fun addObservations(observations: Iterable<Multiset<AGENT>>) {
+        observations.forEach { addObservation(it) }
+    }
 
-        timesteps.forEach { it.applySolution() }
+
+    fun solve() {
+        do {
+            val solver = MPSolver("HamiltonianSolver", MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING)
+            calculatePotentialEvents()
+
+            timesteps.forEach { it.setupProblem(solver) }
+            solver.objective().setMaximization()
+            println("solving for ${solver.numVariables()} variables and ${solver.numConstraints()} constraints")
+            val solveState = solver.solve()
+            println("solveState = $solveState")
+
+            if (solveState == MPSolver.ResultStatus.INFEASIBLE) {
+                println("COULDN'T SOLVE. ROLLING BACK...")
+                val timestepIt = timesteps.descendingIterator()
+                var doneRollback = false
+                while(timestepIt.hasNext() && !doneRollback) {
+                    doneRollback = timestepIt.next().rollback()
+                }
+                if(!doneRollback) throw(IllegalStateException("Unsolvable state"))
+            }
+
+        } while(solveState == MPSolver.ResultStatus.INFEASIBLE)
+
+        timesteps.forEach {
+            it.applySolution()
+        }
     }
 
 

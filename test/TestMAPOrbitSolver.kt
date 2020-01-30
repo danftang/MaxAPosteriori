@@ -1,5 +1,3 @@
-import lib.HashMultiset
-import lib.Multiset
 import org.junit.Test
 
 class TestMAPOrbitSolver {
@@ -8,7 +6,7 @@ class TestMAPOrbitSolver {
         System.loadLibrary("jniortools")
 
         // generate observation path
-        val myModel = Model(TenByTenParams)
+        val myModel = PredPreyModel(TenByTenParams)
         val startState = myModel.randomState(100)
         val observations = myModel.generateObservations(startState, 4, 0.5)
         println("Real orbit")

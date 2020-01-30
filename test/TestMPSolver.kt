@@ -23,6 +23,7 @@ class TestMPSolver {
         obj.setCoefficient(y, 10.0)
         obj.setMaximization()
 
+        println("solving for ${solver.numVariables()} variables and ${solver.numConstraints()} constraints")
         val solveState = solver.solve()
 
         println("solveState = $solveState")
@@ -30,6 +31,10 @@ class TestMPSolver {
         println("x = ${x.solutionValue()}")
         println("y = ${y.solutionValue()}")
         println("objective = ${obj.value()}")
+
+//        val solver2 = MPSolver("MySolver", MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING)
+//        println("solving for ${solver2.numVariables()} variables and ${solver2.numConstraints()} constraints")
+
     }
 
 }

@@ -2,12 +2,13 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="74e226ce-4e81-4f5a-b3f8-14355773cdf7" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/test/TestMPSolver.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/MaxAPosteriori.iws" beforeDir="false" afterPath="$PROJECT_DIR$/MaxAPosteriori.iws" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Hamiltonian.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/Hamiltonian.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/MAPOrbitSolver.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/MAPOrbitSolver.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Model.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/Model.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Model.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/PredPreyModel.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Timestep.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/Timestep.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test/TestMAPOrbitSolver.kt" beforeDir="false" afterPath="$PROJECT_DIR$/test/TestMAPOrbitSolver.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test/TestMPSolver.kt" beforeDir="false" afterPath="$PROJECT_DIR$/test/TestMPSolver.kt" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -167,7 +168,9 @@
       <workItem from="1580121924458" duration="4007000" />
       <workItem from="1580136765905" duration="9621000" />
       <workItem from="1580216544535" duration="14003000" />
-      <workItem from="1580301345325" duration="21879000" />
+      <workItem from="1580301345325" duration="22621000" />
+      <workItem from="1580343130153" duration="3982000" />
+      <workItem from="1580384079287" duration="6353000" />
     </task>
     <servers />
   </component>

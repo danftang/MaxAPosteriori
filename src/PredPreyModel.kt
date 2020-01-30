@@ -4,16 +4,21 @@ import lib.*
 import kotlin.math.ln
 import kotlin.random.Random
 
-class Model: Hamiltonian<Agent> {
+class PredPreyModel: Hamiltonian<Agent> {
     val solver: MPSolver
     var X: Array<Map<Int,MPVariable>> // integer variables associated with every act in every timestep
+    val deathEvents: Map<Agent,Event<Agent>>
 
     data class Observation(val realState: Multiset<Agent>, val observation: Multiset<Agent>)
 
     constructor(params: Params) : super() {
+        deathEvents = HashMap()
         for(i in 0 until params.GRIDSIZESQ) {
             Predator(i).hamiltonian(this, params)
             Prey(i).hamiltonian(this, params)
+        }
+        this.filter { it.consequences.isEmpty() && it.secondaryRequirements.isEmpty() }.forEach {
+            deathEvents[it.primaryAgent] = it
         }
         X = emptyArray()
         solver = MPSolver("HamiltonianSolver", MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING)
@@ -27,6 +32,7 @@ class Model: Hamiltonian<Agent> {
         }
         return state
     }
+
 
     fun sampleContinuousTimePath(startState: Multiset<Agent>, time: Double): List<Pair<Double,Multiset<Agent>>> {
         val distribution = MutableCategorical<Event<Agent>>()
