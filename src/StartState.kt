@@ -7,17 +7,14 @@ import lib.MutableMultiset
 class StartState<AGENT>: ModelState<AGENT> {
     override val sources: MutableMultiset<AGENT>
     override val consequencesFootprint: Set<AGENT>
-        get() = sources.distinctSet
-    override val indicators: Map<Event<AGENT>, MPVariable>
-        get() = emptyMap()
+        get() = sources.supportSet
 
     constructor(state: Multiset<AGENT>) {
         sources = HashMultiset()
         sources.addAll(state)
     }
 
-    override fun addConsequencesToConstraint(constraint: MPConstraint, agent: AGENT, multiplier: Int) {
-        constraint.setBounds(-sources.count(agent).toDouble(), Double.POSITIVE_INFINITY)
+    override fun addConsequencesToConstraints(constraints: Map<AGENT, MPConstraint>, multiplier: Double) {
     }
 
 }

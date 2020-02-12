@@ -1,0 +1,302 @@
+\documentclass{article}
+
+\usepackage{arxiv}
+
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage{lipsum}		% Can be removed after putting your text content
+\usepackage{amssymb,amsmath}
+\usepackage{listings}
+\usepackage{graphicx}
+\usepackage{subfig}
+\usepackage{apacite}
+
+\title{Finding the most probable explanation of partial observations of an agent-based model\\
+*** UNFINISHED DRAFT ***}
+
+%\date{September 9, 1985}	% Here you can change the date presented in the paper title
+%\date{} 					% Or removing it
+
+\author{
+  Daniel Tang\\
+  Leeds Institute for Data Analytics\\
+  University of Leeds\\
+  Leeds, UK\\
+  \texttt{D.Tang@leeds.ac.uk} \\
+  %% examples of more authors
+  %% \AND
+  %% Coauthor \\
+  %% Affiliation \\
+  %% Address \\
+}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We often make partial observations of some dynamical system and wish to explain those observations in terms of the most probable set of events that caused them. Here we consider the case when the dynamical system is a (possibly stochastic) time-stepping agent-based model with a discrete state space and the observations are the (possibly noisy) number of agents that have some given property.
+
+We show that this problem can be reduced to an integer linear problem which can subsequently be solved numerically using a standard branch-and-cut algorithm. We describe two implementations, an ``offline'' algorithm that finds the most probable explanation of observations over a finite time window, and an ``online'' algorithm that incrementally builds a coherent explanation of a stream of observations that may have no end. We then demonstrate the algorithms by constructing explanations of partial observations of a 2-dimensional, spatial predator-prey agent based model.
+
+\textbf{This is an unfinished draft which may contain errors and is subject to change.}
+\end{abstract}
+
+% keywords can be removed
+\keywords{Data assimilation, Agent based model, Quantum field theory, Probabilistic programming}
+
+\section{Introduction}
+%##########################################
+
+Intuitively, the problem we'll consider here is as follows: there is a complex-system of interest which we believe can be well modelled by an agent based model. We have some prior beliefs about the boundary conditions of the system and we have made some observations over some period of time but the observations are incomplete (in that they do not specify the full state of the model at any time) and possibly noisy. The problem is to use the model to find the most probable interpretation of the observations in terms of a coherent set of agent actions or ``events'' that lead up to, or ``explain'',  our observations.
+
+In order to make an algorithm to solve this problem, we'll first define the problem a bit more precisely.
+
+\subsection{What is an agent-based model?}
+%#########################################
+
+We take the essential characteristic of an agent-based model to be that the dynamics of the model can be described entirely in terms of agent behaviours. Each agent may have an internal state and the state of the whole model at any instant consists of the states of all the agents in the model at that instant.
+
+Within this broad definition, there are a number of sub-categorizations
+\begin{itemize}
+
+\item Modelled time can be either discrete or continuous. In a discrete-time model, agent behaviour consists of timesteps from time $t$ to $t+1$ and time is an integer. In a continuous-time model agent behaviour consists of discrete events that can happen at any time and time is a real number. In this paper we will consider discrete-time models.
+
+\item The internal state of an agent can be discrete, continuous or mixed depending on whether the state can be most naturally expressed as a vector of integers, a vector of real numbers or a mixture of integers and reals. In this paper we will consider agents with discrete-state. 
+
+\item Agents can be deterministic or stochastic. A deterministic agent will always exhibit the same behaviour given its own state and the state of other agents in the model, whereas a stochastic agent will have a fixed probability of performing a given behaviour given its own state and that of other agents. In this paper we will consider stochastic agents.
+
+\item If only one agent can occupy a given state at any instant, then the state of the model is a set of agent states and we call it a Fermi-Dirac model, whereas if two or more agents can occupy the same state at the same time then the model state is a multiset\cite{blizard1988multiset} of agent states and we call it a Bose-Einstein model. In this paper we will consider Bose-Einstein models but the results can easily be applied to Fermi-Dirac models.
+
+\end{itemize}
+
+We define the behaviour of an agent as a conditional probability distribution over a set of events. Each event represents an agent performing an action, and has the form $(\Phi|\psi,R,\bar{R})$ where $\psi$ is the state of the agent before the action, $R$ is the set of agents that must be present for the action to occur, $\bar{R}$ is the set of agents that must be absent for the action to occur and $\Phi$ is the multiset of agents that are the result of the action occuring. So, if an agent has a behaviour $P(\Phi|\psi,R,\bar{R})$ then when it is in state $\psi$ in an environment containing all agents in $R$ and no agents in $\bar{R}$, it performs an action that results in $\Phi$ with probability $P(\Phi|\psi,R,\bar{R})$.
+
+So, for example, an agent with behaviour $P(\{\psi'\}|\psi,\emptyset,\emptyset) = 1.0$ will, with certainty, transition to state $\psi'$ at time $t+1$ if it is in state $\psi$ at time $t$. An agent with behaviour $P(\emptyset|\psi,\{\phi\},\emptyset) = 0.5$ in state $\psi$ in the presence of another agent in state $\phi$ will disappear with probability $0.5$.
+
+Without loss of generality, we assume that all agents in the model have the same behaviour; if we wish to model multiple types of agent, we can embed the agent's type in its state.
+
+We define an event trajectory as a list of multisets of events $\left<E_1...E_n\right>$, which can be thought of as the assertion that, for each $i$, at least the events in $E_i$ (and possibly some others) occured in timestep from $t=i-1$ to $t=i$. 
+
+Not all sets of events are possible from a model state $\Psi$ so we say that $\Psi$ \textit{satisfies} a multiset of events $E$, and write $\Psi\vdash E$, if the following conditions hold:
+
+Each active agent must be present in $\Psi$ and must perform at most one action per timestep
+\begin{equation}
+\sum_{(\Phi|\psi,R,\bar{R})\in E}\{\psi\} \subseteq \Psi
+\label{agency}
+\end{equation}
+...each event's presence-requirements must be fulfilled
+\[
+\bigcup_{(\Phi|\psi,R,\bar{R})\in E} R \subseteq \Psi
+\]
+...and each event's absence-requirements must be fulfilled
+\[
+\left(\bigcup_{(\Phi|\psi,R,\bar{R})\in E_t} \bar{R}\right) \cap \Psi = \emptyset
+\]
+A multiset of events implies a state which is the sum of the consequences of its members. We'll write this as $\Psi(E)$
+\begin{equation}
+\Psi(E) = \sum_{(\Phi|\psi,R,\bar{R})\in E}\Phi
+\label{psie}
+\end{equation}
+
+A trajectory of events, $\left<E_1...E_n\right>$, has an associated trajectory of states $\left<\Psi(E_1)...\Psi(E_2)\right>$ and for the trajectory to be feasible $\forall i\in 2...n: \Psi(E_{i-1}) \vdash E_i$.
+
+If equation \ref{agency} is satisfied with equality we say that $\Psi$ \textit{completely satisfies} $E$ and $E$ becomes a feasible timestep of the model in state $\Psi$. The probability of such a timestep is given by
+\[
+P(E|\Psi) = \prod_{(\Phi|\psi,R,\bar{R}) \in E} P(\Phi|\psi,R,\bar{R})
+\]
+So, if $E$ is a feasible timestep of the model from state $\Psi_t$ then the state after the occurence of $E$ will be $\Psi_{t+1} = \Psi(E)$.
+
+
+\subsection{What is an observation?}
+%###################################
+
+In this paper we will consider observations that consist of a count of the number of agents for which some constraint is true. The observation can be exact or noisy in that the real count can lie in some range. More formally $\omega = \left<L,U,B,t\right>$ denotes an observation that at time $t$ the number of agents for which predicate $B$ was true lay somewhere in the range  $L \le N \le U$. If $\mathcal{T} = \left<\Psi_0...\Psi_n\right>$ is some model trajectory then we say that the trajectory satisfies the observation, which we write as $\mathcal{T} \vdash \omega_i$, if and only if
+\[
+L \le \left|\left\{\psi:\psi \in \Psi_t \wedge B(\psi)\right\}\right| \le U
+\]
+
+This form of observation can deal with exact observations ($L=U$), observations where there may be false-positives ($U$ is the observed count and $L=0$), observations where there may be false negatives ($L$ is the observed count and $U=\infty$) or observations that have some uncertainty ($L = N - \Delta N$ and $U = N + \Delta N$).
+
+\subsection{What is a prior belief about boundary conditions?}
+%###################################
+
+The boundary conditions on the system consist of agents entering the system at particular times. At its simplest, it is a set of agents that enter the system at time $t=0$, though it need not be this.
+
+More generally, it is a set of probability distributions $P(\Gamma,t)$ which give the prior probability that a multiset $\Gamma$ is a subset of the agents that enter the system at time $t$.
+
+In this paper we assume that these prior beliefs can be factorised into factors that involve single agent states and that the multiplicity of agents in a given state remains small. In this case the prior probabilities can be expressed as
+\[
+P(\Gamma,t) = \prod_{\psi \in^{=n} \Gamma} P(\psi,n,t)
+\]
+where $\psi\in^{=n}\Gamma$ is true when $\psi$ appears in $\Gamma$ exactly $n$ times and $P(\psi,n,t)$ is the probability of at least $n$ agents in state $\psi$ being injected at time $t$. 
+
+
+\subsection{What is an explanation of a set of observations?}
+%############################################################
+
+Armed with the above definitions, we can define an ``explanation'' of a set of observations $\Omega$ as a feasible event trajectory $\mathcal{E} = \left<E_1...E_m\right>$ whose associated state trajectory $\mathcal{T} = \left<\Psi_0, \Psi(E_1)...\Psi(E_m)\right>$ satisfies all the observations (i.e. $\forall_{\omega \in \Omega}: \mathcal{T} \vdash \omega$).
+
+The probability of an explanation can be expressed most easily if we consider the agents entering the system via the boundary conditions as ``injection events'', $(\Phi|\psi_{\emptyset},\emptyset,\emptyset)$, that have no requirements and are performed by some null-state agent $\psi_\emptyset$ which is a member of all model states by definition. We can then extend the set of events to time $t=0$ by including any initial injection events $E_0$ and defining $\Psi_0 = \Psi(E_0)$. The probability of an explanation is then just the product of the probabilities of all the events
+\[
+P(\left<E_0...E_m\right>) = \prod_{i}\prod_{\epsilon\in E_i, }P(\epsilon)
+\]
+Notice that there is a preference for explanations with fewer events, all else being equal, which can be interpreted as Ockham's razor.
+
+\section{Finding the Maximum-A-Posteriori explanation}
+%#####################################################
+
+Bringing all this together, we can now express our problem precisely:
+
+Given a set of observations $\Omega$ and an agent behaviour $P(\Phi|\psi,R,\bar{R})$, find
+\[
+\mathcal{E} = \arg\max_{\left<E_0...E_m\right>}\prod_{i}\prod_{\epsilon\in E_i, }P(\epsilon)
+\]
+subject to the explanation being feasible, $\forall n \in 1...m:  \Psi(E_{t-1}) \vdash E_t$ and satisfying all the observations, $\forall \omega \in \Omega: \left<E_0...E_m\right> \vdash \omega$ and $E_0$ containing only injection events.
+
+To solve this, first encode an explanation in terms of a set of non-negative integers $c_{te}$ such that in timestep $t$, the event $e$ occurs exactly $c_{te}$ times.
+
+Now encode each event $e = (\Phi|\psi,R,\bar{R})$ by letting 
+\[
+\Phi_{e\phi} = n: \phi \in^n \Phi\\
+\]
+\[
+\psi_{e\phi} = 
+\begin{cases}
+1&\text{if } \phi = \psi\\
+0&\text{otherwise}\\
+\end{cases}
+\]
+\[
+R_{e\phi} =
+\begin{cases}
+1&\text{if } \phi \in R\\
+0&\text{otherwise}\\
+\end{cases}
+\]
+\[
+\bar{R}_{e\phi} =
+\begin{cases}
+1&\text{if } \phi \in \bar{R}\\
+0&\text{otherwise}\\
+\end{cases}
+\]
+Now encode the observation predicates for each event
+\[
+B_e = |\{\psi: \psi\in\Phi \wedge B(\psi)\}|
+\]
+and finally let
+\[
+P_e = P(\Phi|\psi,R,\bar{R})
+\]
+
+We can now express the problem as: Maximise
+\[
+P = \sum_t\sum_e \log(P_e)c_{te}
+\]
+subject to...
+
+first define a set of boolean variables $b_{t\phi}$ which satisfy
+\[
+Mb_{t\phi} \ge \sum_e  \Phi_{e\phi}c_{(t-1)e}
+\]
+\[
+b_{t\phi} \le \sum_e  \Phi_{e\phi}c_{(t-1)e}
+\]
+
+The observations are satisfied
+\[
+\forall \left<L,U,B,t\right> \in \Omega: L \le \sum_e B_e c_{te} \le U
+\]
+
+Each agent performs at most one action
+\[
+\forall\phi: \sum_e\ \psi_{e\phi} c_{te} \le \sum_e  \Phi_{e\phi}c_{(t-1)e}
+\]
+each event's presence requirements are fulfilled
+\[
+\forall\phi: \sum_e\ R_{e\phi} c_{te} \le Mb_{t\phi}
+\]
+for some maximum multiplicity $M$. Each event's absence requirements are fulfilled
+\[
+\forall\phi: \sum_e\ \bar{R}_{e\phi} c_{te} + Mb_{t\phi} \le M
+\]
+
+This can be seen to be in the form of a pure integer linear programming problem.
+
+%\bibliographystyle{unsrtnat}
+%\bibliographystyle{apalike} 
+\bibliographystyle{apacite}
+\bibliography{references}
+
+\newpage
+\appendix
+
+\section{Appendix: Proof that $e^{Ht}X\emptyset = e^{[H,.]t}X\emptyset$}
+% ####################################################
+
+By definition
+\begin{equation}
+e^{Ht}X\emptyset = \sum_{n=0}^\infty \frac{t^n}{n!} H^nX\emptyset
+\label{exponential}
+\end{equation}
+but
+\[
+H^nX\emptyset = H^{n-1}(XH + [H,X])\emptyset
+\]
+However, since all terms in $H$ have annihilation operators, $XH\emptyset = 0$ for all $X$ so
+\begin{equation}
+H^nX\emptyset = H^{n-1}[H,X]\emptyset
+\label{recurrence}
+\end{equation}
+
+Let $[H,.]$ be the ``commute H with'' operator, so that
+\[
+[H,\,.\,](X) = [H,X]
+\]
+and
+\[
+[H,\,.\,]^n(X) = [H,\dots [H,[H,X]]\dots ]
+\]
+is the $n$-fold application of the commutator to $X$. Note that $[H,.](X)Y \ne [H,.](XY)$ so we use brackets where there is any ambiguity.
+
+From equation \ref{recurrence}
+\[
+H^nX\emptyset = [H,.]^n(X)\emptyset
+\]
+Substituting into equation \ref{exponential}
+\begin{equation}
+e^{Ht}X\emptyset = \sum_{n=0}^\infty \frac{t^n}{n!} [H,.]^n X\emptyset = e^{[H,.]t}X\emptyset
+\label{Hcommutation}
+\end{equation}
+
+\section{Uniformisation of the Hamiltonian}
+% ####################################################
+The numerical properties of the exponential of the Hamiltonian can be improved in a way analogous to that of a continuous time Markov chain \cite{reibman1988numerical}. 
+
+Let $I$ be the identity operator. By definition
+\[
+e^{kI} = \sum_{n=0}^\infty \frac{(kI)^n}{n!}
+\]
+but since $I^n=I$ for all $n$
+\[
+e^{kI} = \sum_{n=0}^\infty \frac{k^n}{n!}I = e^k
+\]
+So
+
+\begin{equation*}
+e^{At} = e^{\frac{A}{\gamma}\gamma t} = e^{\left(I - I + \frac{A}{\gamma}\right)\gamma t} = e^{-\gamma t}e^{\left( I + \frac{A}{\gamma}\right)\gamma t}
+\end{equation*}
+
+\begin{equation}
+e^{At} = \sum_{n=0}^\infty  \left(I + \frac{A}{\gamma}\right) ^n\frac{(\gamma t)^n e^{-\gamma t}}{n!}
+\label{uniformisation}
+\end{equation}
+
+
+\end{document}

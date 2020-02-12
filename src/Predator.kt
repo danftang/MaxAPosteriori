@@ -13,6 +13,13 @@ class Predator : Agent {
 //        if(params.predCaptureAndReproduce > 0.0) captureAndReproduce(h, params)
     }
 
+    fun diffuse(h: Hamiltonian<Agent>, size: Int, rate: Double) {
+        h += action(rate/4.0, copyAt(right(size)))
+        h += action(rate/4.0, copyAt(left(size)))
+        h += action(rate/4.0, copyAt(up(size)))
+        h += action(rate/4.0, copyAt(down(size)))
+    }
+
 //    fun capture(h: Hamiltonian<Agent>, params: Params) {
 //        h += interaction(params.predCaptureOnly, Prey(pos), this)
 //        h += interaction(params.predCaptureOnly, Prey(right(params.GRIDSIZE)), this)

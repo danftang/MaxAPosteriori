@@ -67,6 +67,7 @@ class PredPreyModel: Hamiltonian<Agent> {
         // generate events
         var state = startState
         for(t in 1..nSteps) {
+
             val lastState = state
             lastState.forEach {agent ->
                 val choices = MutableCategorical<Event<Agent>>()

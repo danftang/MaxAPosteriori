@@ -17,68 +17,72 @@ open class Params(val GRIDSIZE: Int,
 
 object StandardParams : Params(
         32,
-        0.02,
         0.04,
-        0.03,
+        0.04,
+
+        0.03,           // these three should add up to 1.0
         0.06,
-        1.0,
+        0.91,
+
         0.07,
-        0.05,
-        0.5,
-        1.0
+        0.091,       // captures must add up to preyDiffuse
+        0.819,
+        0.93            // predDiffuse + predDie should add to 1.0
 )
 
 object TenByTenParams : Params(
         10,
-        0.06,
         0.12,
+        0.12,
+
         0.03,
         0.06,
-        1.0,
+        0.91,
+
         0.07,
-        0.0,//0.05,
-        0.5,
-        1.0
+        0.091,//0.05,
+        0.819,
+        0.93
 )
 
 
-val MediumParams = Params(
-        8,
-        0.04,
-        0.08,
-        0.03,
-        0.06,
-        1.0,
-        0.07,
-        0.05,
-        0.5,
-        1.0
-)
-
-
-object SmallParams : Params(
-        3,
-        0.25,
-        0.2,
-        0.03,
-        0.06,
-        1.0,
-        0.07,
-        0.05,
-        0.5,
-        1.0
-)
-
-object TestParams : Params(
-        32,
-        0.03,
-        0.06,
-        0.1,
-        0.15,
-        1.0,
-        0.1,
-        0.0,//0.05,
-        0.5,
-        1.0
-)
-
+//val MediumParams = Params(
+//        8,
+//        0.04,
+//        0.08,
+//        0.03,
+//        0.06,
+//        1.0,
+//        0.07,
+//        0.05,
+//        0.5,
+//        1.0
+//)
+//
+//
+//object SmallParams : Params(
+//        3,
+//        0.25,
+//        0.2,
+//        0.03,
+//        0.06,
+//        1.0,
+//        0.07,
+//        0.05,
+//        0.5,
+//        1.0
+//)
+//
+//object TestParams : Params(
+//        32,
+//        0.03,
+//        0.06,
+//        0.1,
+//        0.15,
+//        1.0,
+//        0.1,
+//        0.0,//0.05,
+//        0.5,
+//        1.0
+//)
+//

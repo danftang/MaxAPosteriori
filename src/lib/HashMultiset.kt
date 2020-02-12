@@ -1,62 +1,78 @@
 package lib
 
-class HashMultiset<T>(override val counts : MutableMap<T,Int> = HashMap()): MutableMultiset<T> {
+class HashMultiset<T>(private val mutableCounts: HashMap<T,Int> = HashMap()): MutableMultiset<T> {
+    override val counts: Map<T,Int>
+        get() = mutableCounts
     override var size : Int = 0
-
-    override fun add(m : T) = add(m,1)
-
-
-    override fun add(m : T, n : Int) : Boolean {
-        counts.merge(m,n,Int::plus)
-        size += n
-        return true
-    }
 
 
     constructor(initialCapacity : Int) : this(HashMap(initialCapacity))
 
     constructor(container : Iterable<T>) : this() {
-        container.forEach {
-            add(it)
-        }
+        container.forEach { add(it) }
     }
 
     constructor(container : Collection<T>) : this(HashMap(container.size)) {
-        container.forEach {
-            add(it)
-        }
+        container.forEach { add(it) }
     }
 
     constructor(array: Array<out T>): this(array.asList())
 
-
-
-
-    override fun remove(element : T) : Boolean {
-        return remove(element,1)
-    }
-
-
-    override fun remove(element : T, n : Int) : Boolean {
-        var removed = 0
-        counts.compute(element) { _, count ->
-            if(count == null) null else {
-                if(count <= n) {
-                    removed = count
-                    null
-                } else {
-                    removed = n
-                    count - n
-                }
+    override fun compute(member: T, transform: (T, Int) -> Int): Int {
+        val newVal = mutableCounts.compute(member) { member, oldValOrNull ->
+            val oldVal = oldValOrNull?:0
+            val newVal = transform(member, oldVal)
+            if(newVal <= 0) {
+                size -= oldVal
+                null
+            } else {
+                size += newVal - oldVal
+                newVal
             }
         }
-        size -= removed
-        return removed == n
+        return newVal?:0
     }
+
+
+    override fun merge(member: T, value: Int, transform: (Int, Int) -> Int): Int {
+        size += value
+        val newVal = mutableCounts.merge(member, value) { oldVal, otherVal ->
+            val newVal = transform(oldVal,otherVal)
+            if(newVal <= 0) {
+                size -= oldVal + otherVal
+                null
+            } else {
+                size += newVal - oldVal - otherVal
+                newVal
+            }
+        }
+        return newVal?:0
+    }
+
+
+
+
+    override fun retainAll(elements: Multiset<T>): Boolean {
+        return mutableCounts.entries.removeIf { entry ->
+            val toRetain = elements.count(entry.key)
+            if (toRetain < entry.value) {
+                size -= entry.value
+                if (toRetain > 0) {
+                    entry.setValue(toRetain)
+                    size += toRetain
+                    false
+                } else {
+                    true
+                }
+            }
+            false
+        }
+    }
+
 
 
     override operator fun iterator() : MutableIterator<T> {
-        return MultiMutableIterator(counts.iterator(), this::decrementSize)
+        return MultiMutableIterator(mutableCounts.iterator(), this::decrementSize)
     }
 
 
@@ -78,7 +94,7 @@ class HashMultiset<T>(override val counts : MutableMap<T,Int> = HashMap()): Muta
     ////////////////////////////////////////////////////////
     fun elementAt(index : Int) : T {
         var count = index
-        val it = counts.iterator()
+        val it = mutableCounts.iterator()
         var entry : MutableMap.MutableEntry<T,Int>
         do {
             entry = it.next()
@@ -119,7 +135,7 @@ class HashMultiset<T>(override val counts : MutableMap<T,Int> = HashMap()): Muta
     }
 
     override fun hashCode(): Int {
-        return counts.hashCode()
+        return mutableCounts.hashCode()
     }
 
     override fun toString(): String {
@@ -134,6 +150,10 @@ class HashMultiset<T>(override val counts : MutableMap<T,Int> = HashMap()): Muta
             if (!it.hasNext()) return sb.append(']').toString()
             sb.append(',').append(' ')
         }
+    }
+
+    override fun clear() {
+        mutableCounts.clear()
     }
 
 

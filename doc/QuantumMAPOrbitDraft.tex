@@ -1,0 +1,251 @@
+\documentclass{article}
+
+\usepackage{arxiv}
+
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage{lipsum}		% Can be removed after putting your text content
+\usepackage{amssymb,amsmath}
+\usepackage{listings}
+\usepackage{graphicx}
+\usepackage{subfig}
+\usepackage{apacite}
+
+\title{Finding the maximum a-posteriori orbit of an agent-based model\\
+*** UNFINISHED DRAFT ***}
+
+%\date{September 9, 1985}	% Here you can change the date presented in the paper title
+%\date{} 					% Or removing it
+
+\author{
+  Daniel Tang\\
+  Leeds Institute for Data Analytics\\
+  University of Leeds\\
+  Leeds, UK\\
+  \texttt{D.Tang@leeds.ac.uk} \\
+  %% examples of more authors
+  %% \AND
+  %% Coauthor \\
+  %% Affiliation \\
+  %% Address \\
+}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We describe an algorithm to find the orbit from time $t=0$ to $t=T$ of an agent based model that has the maximum posterior probability given partial observations of the state at time $t=T$.
+
+This is an unfinished draft which may contain errors and is subject to change.
+\end{abstract}
+
+% keywords can be removed
+\keywords{Data assimilation, Agent based model, Quantum field theory, Probabilistic programming}
+
+\section{Introduction}
+%##########################################
+
+It has been shown\cite{tang2019data} that a probability distribution over states of an agent based model can be described as an operator made up of creation and annihilation operators acting on an empty model-state, $\emptyset$. For a certain class of agent-based models, the behaviour of the agents can be expressed as a Hamiltonian operator that transforms a probability distribution over model states into the rate-of-change of that distribution.
+
+Given the Hamiltonian, $H$, the probability distribution over the agent-based model states at time $t$ is given by
+\[
+\psi_t = e^{Ht}\psi_0
+\]
+where $\psi_0$ is the distribution at time $t=0$.
+
+\section{Factorized integration}
+%################################
+
+Suppose we want to calculate
+\[
+e^{Ht}S_0\emptyset
+\]
+
+From equation \ref{Hcommutation} we have
+\[
+e^{Ht}S_0\emptyset = e^{[H,.]t}S_0\emptyset
+\]
+
+Now using equation \ref{uniformisation} we have
+\[
+e^{Ht}S_0\emptyset = \sum_{n=0}^\infty  \frac{(\gamma t)^n e^{-\gamma t}}{n!}\left(I + \frac{[H,.]}{\gamma}\right)^nS_0\emptyset
+\]
+But if we set $\gamma = \sum_n \rho_n$ we can split the term inside the brackets into separate acttions and interactions of the form
+\[
+I + \frac{[H,.]}{\gamma} = 
+\sum_a \frac{\rho_a}{\gamma}\left(I + [(a^\dag_{j_a}\ldots - a^\dag_{i_a})a_{i_a},.] \right) + 
+\sum_b \frac{\rho_b}{\gamma}\left(I + [(a^\dag_{k_b}\dots a^\dag_{l_b} - a^\dag_{j_b}a^\dag_{i_b})a_{j_b}a_{i_b},.] \right)
+\]
+
+So, if we let
+\[
+\alpha = \left\{ \frac{\rho_a}{\gamma}\left(I + [(a^\dag_{j_a}\ldots - a^\dag_{i_a})a_{i_a},.] \right) \right\}
+\]
+be the set of commutated, uniformatized actions of $H$ and
+\[
+\beta = \left\{ \frac{\rho_b}{\gamma}\left(I + [(a^\dag_{k_b}\dots a^\dag_{l_b} - a^\dag_{j_b}a^\dag_{i_b})a_{j_b}a_{i_b},.] \right) \right\}
+\]
+be the set of commutated, uniformatized interactions of $H$, and let $\chi = \alpha \cup \beta$ we have
+\[
+e^{Ht}S_0\emptyset = \sum_{n=0}^\infty  \frac{(\gamma t)^n e^{-\gamma t}}{n!}\left(\sum_{A\in \chi} A\right)^nS_0\emptyset
+\]
+As long as multiple agents do not occupy the same state, each term in the expansion of this sum (in terms of products of commutated, uniformatized actions and interactions) represents a possible orbit of the model from $S_0$ over time $t$.
+
+\section{Finding the MAP over the orbits}
+%##########################################
+
+Suppose we have a posterior distribution
+\[
+\Omega e^{Ht}S_0\emptyset = \Omega \sum_{n=0}^\infty  \frac{(\gamma t)^n e^{-\gamma t}}{n!}\left(\sum_{A\in \chi} A\right)^nS_0\emptyset
+\]
+and we wish to find the term in the expansion of
+\[
+\left(\sum_{A\in \chi} A\right)^n
+\]
+that has maximum probability.
+
+Suppose we label the memebers of $\chi$, $A_1...A_m$ and let $w_i = \frac{\rho_i}{\gamma}$ be the weight of the $i^{th}$ act, $A_i$. Let $R_k$ be the number of annihilation operators of state $k$ in $\Omega$, and let $S_k$ be the number of creation operators of state $k$ in $S_0$.
+
+Let an orbit consist of a list of integers $t_1...t_n$ where $1 \le t_i \le m$, corresponding to the acts $A_{t_1}\dots A_{t_n}$.
+
+Let $r_{ik}$ be the number of annihilation operators of state $k$ in $A_i$, and let $c_{ik}$ be the number of creation operators of state $k$ in the term $A_i\prod_j a^{\dag r_{ij}}_j$.
+
+An orbit is feasible iff
+\[
+\forall i,k: S_k- r_{t_ik} + \sum_{j=i+1}^n c_{t_jk} -r_{t_jk}  \ge 0
+\]
+and for the observations
+\[
+\forall k: S_k + \sum_{i=1}^n c_{t_ik} - r_{t_ik} \ge R_k
+\]
+
+This can be expressed as a constrained optimisation problem in the following way. Let
+\[
+0 \le b_{ij} \le 1
+\]
+be a set of integer indicator variables.
+
+For each pair of acts $(A_p,A_q)$ that do not commute, add the constraint
+\[
+b_{ip} + b_{iq} \le 1
+\]
+and we want $n$ terms in total, so
+\[
+\sum_i\sum_j b_{ij} = n
+\]
+
+The feasibility constraints can be expressed as
+\[
+\forall i,k:    S_k - \sum_j r_{jk}b_{ij} + \sum_{l=i+1}^n\sum_m \left(c_{mk} - r_{mk}\right)b_{lm}  \ge 0
+\]
+and
+\[
+\forall k: S_k + \sum_{l=1}^n\sum_j \left(c_{jk} - r_{jk}\right)b_{lj} -R_k \ge 0
+\]
+
+Within these constraints, we wish to find the assignment to the $b_{ij}$ that maximises
+\[
+W = \sum_i\sum_j b_{ij}\log(w_j)
+\]
+
+This is an integer programming problem which can be solved by the branch-and-cut algorithm.
+
+Once we have a solution, we can read off the $t_1...t_n$ by taking the set $\left\{(i,j): b_{ij}=1\right\}$ and ordering the members $(i_1,j_1) \dots (i_n,j_n)$ such that $\forall k: i_k \le i_{k+1}$\footnote{Since members with the same $i$ value correspond to acts that commute, it doesn't matter which order they are put in.}. The orbit is now given by $j_1\dots j_n$ which corresponds to acts $A_{j_1}\dots A_{j_n}$.
+
+By solving for different values of $n$ and adding
+\[
+\log\left(\frac{(\gamma t)^n e^{-\gamma t}}{n!}\right)
+\]
+to each solution, we then simply choose the maximum to give the MAP orbit. As $n$ increases above $\gamma t$ it becomes increasingly unlikely that we'll find a better orbit.
+
+\section{Extension to any timestepping ABM}
+
+Although this algorithm was developed for use with models whose dynamics are described in terms of annihilation and creation operators, it would seem that the same approach could be used with a little modification to find the MAP orbit of any timestepping agent based model. In place of the observation operator we add the relevant constraints to the integer programming problem and in place of the commutated, uniformatised actions and interactions we put the timesteps of an agent along with its pre-requisites. As long as all these can be expressed as linear constraints, we can perform the same optimisation to find the MAP. Finally, rather than summing over all path lengths, we have a fixed number of timesteps.
+
+More formally, suppose we have an ABM such that the probability that the model in state $S_t$ will transition into state $S_{t+1}$ in a timestep can be expressed in the form
+\[
+P(S_{t+1},S_t) = \sum_{S_{t+1} = \cup_a C_a \cup \cup_{ab} C_{ab}} \prod_a P(C_{a} | s_{a}) + \prod_{a,b} P(C_{ab}|s_a, s_b)
+\]
+
+i.e. each agent has a set of "proprensities to act", while pairs of agents have additional propensities to act as a group. In this case we can express the timestep on the model state as an operator that is the sum of commutated, uniformised acts.
+
+Or, even more generally, we have a single primary requirement (i.e. the agent itself) and a set of secondary requirements. A legel timestep then consists of a set of acts whose primary and secondary requirements are met, with the additional constraint that the set of primary requirements should exactly cover the set of agents (i.e. there is a matching between agents and primary requirements). This is equivalent, in the quantum version, to saying that an interaction must replace at least one agent back in its original state. So, in-fact it is less general than the operator that is a set of acts! (but the requirement allows us to activate multiple acts in one factor when performing branch-and-cut)
+
+
+%\bibliographystyle{unsrtnat}
+%\bibliographystyle{apalike} 
+\bibliographystyle{apacite}
+\bibliography{references}
+
+\newpage
+\appendix
+
+\section{Appendix: Proof that $e^{Ht}X\emptyset = e^{[H,.]t}X\emptyset$}
+% ####################################################
+
+By definition
+\begin{equation}
+e^{Ht}X\emptyset = \sum_{n=0}^\infty \frac{t^n}{n!} H^nX\emptyset
+\label{exponential}
+\end{equation}
+but
+\[
+H^nX\emptyset = H^{n-1}(XH + [H,X])\emptyset
+\]
+However, since all terms in $H$ have annihilation operators, $XH\emptyset = 0$ for all $X$ so
+\begin{equation}
+H^nX\emptyset = H^{n-1}[H,X]\emptyset
+\label{recurrence}
+\end{equation}
+
+Let $[H,.]$ be the ``commute H with'' operator, so that
+\[
+[H,\,.\,](X) = [H,X]
+\]
+and
+\[
+[H,\,.\,]^n(X) = [H,\dots [H,[H,X]]\dots ]
+\]
+is the $n$-fold application of the commutator to $X$. Note that $[H,.](X)Y \ne [H,.](XY)$ so we use brackets where there is any ambiguity.
+
+From equation \ref{recurrence}
+\[
+H^nX\emptyset = [H,.]^n(X)\emptyset
+\]
+Substituting into equation \ref{exponential}
+\begin{equation}
+e^{Ht}X\emptyset = \sum_{n=0}^\infty \frac{t^n}{n!} [H,.]^n X\emptyset = e^{[H,.]t}X\emptyset
+\label{Hcommutation}
+\end{equation}
+
+\section{Uniformisation of the Hamiltonian}
+% ####################################################
+The numerical properties of the exponential of the Hamiltonian can be improved in a way analogous to that of a continuous time Markov chain \cite{reibman1988numerical}. 
+
+Let $I$ be the identity operator. By definition
+\[
+e^{kI} = \sum_{n=0}^\infty \frac{(kI)^n}{n!}
+\]
+but since $I^n=I$ for all $n$
+\[
+e^{kI} = \sum_{n=0}^\infty \frac{k^n}{n!}I = e^k
+\]
+So
+
+\begin{equation*}
+e^{At} = e^{\frac{A}{\gamma}\gamma t} = e^{\left(I - I + \frac{A}{\gamma}\right)\gamma t} = e^{-\gamma t}e^{\left( I + \frac{A}{\gamma}\right)\gamma t}
+\end{equation*}
+
+\begin{equation}
+e^{At} = \sum_{n=0}^\infty  \left(I + \frac{A}{\gamma}\right) ^n\frac{(\gamma t)^n e^{-\gamma t}}{n!}
+\label{uniformisation}
+\end{equation}
+
+
+\end{document}

@@ -6,9 +6,9 @@ class TestMAPOrbitSolver {
         System.loadLibrary("jniortools")
 
         // generate observation path
-        val myModel = PredPreyModel(TenByTenParams)
-        val startState = myModel.randomState(100)
-        val observations = myModel.generateObservations(startState, 4, 0.5)
+        val myModel = PredPreyModel(StandardParams)
+        val startState = myModel.randomState(50)
+        val observations = myModel.generateObservations(startState, 6, 0.5)
         println("Real orbit")
         observations.forEach {println(it.realState)}
         println("Observations")
@@ -16,7 +16,7 @@ class TestMAPOrbitSolver {
 
         val mySolver = MAPOrbitSolver(myModel, startState)
         observations.drop(1).forEach { mySolver.addObservation(it.observation) }
-        mySolver.solve()
+        mySolver.completeSolve()
 
         println("MAP orbit is")
         mySolver.timesteps.forEach { println(it.commitedEvents) }

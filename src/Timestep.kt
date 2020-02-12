@@ -14,11 +14,16 @@ class Timestep<AGENT>: ModelState<AGENT> {
     var potentialEvents: Set<Event<AGENT>> = setOf()
     val commitedEvents = ArrayList<Event<AGENT>>()
     override val sources = HashMultiset<AGENT>()
-    override val indicators = HashMap<Event<AGENT>,MPVariable>()
+    val eventIndicators = HashMap<Event<AGENT>,MPVariable>()
+    val footprintIndicators = HashMap<AGENT,MPVariable>()
     override val consequencesFootprint: Set<AGENT>
-        get() = (potentialEvents.asSequence().flatMap { it.consequences.distinctSet.asSequence() } + sources.asSequence()).toSet()
+        get() = (potentialEvents.asSequence().flatMap { it.consequences.supportSet.asSequence() } + sources.asSequence()).toSet()
     val requirementsFootprint: Set<AGENT>
         get() = potentialEvents.asSequence().flatMap { it.requirements.asSequence() }.toSet()
+    val absenceFootprint: Set<AGENT>
+        get() = potentialEvents.asSequence().flatMap { it.absenceRequirements.asSequence() }.toSet()
+    val allRequirementsFootprint: Set<AGENT>
+        get() = potentialEvents.asSequence().flatMap { it.totalRequirements.asSequence() }.toSet()
     val committedState: Multiset<AGENT>
         get() = commitedEvents.flatMap { it.consequences }.toMultiset()
 
@@ -30,7 +35,7 @@ class Timestep<AGENT>: ModelState<AGENT> {
     }
 
     fun addForwardEvents() {
-         potentialEvents = hamiltonian.eventsSatisfiedBy(previousState.consequencesFootprint).toSet()
+         potentialEvents = hamiltonian.eventsPresenceSatisfiedBy(previousState.consequencesFootprint).toSet()
     }
 
 
@@ -44,23 +49,76 @@ class Timestep<AGENT>: ModelState<AGENT> {
     }
 
 
-    fun setupProblem(solver: MPSolver) {
+    fun setupPartialSolution(solver: MPSolver) {
         // setup vars
-        indicators.clear()
+        eventIndicators.clear()
         potentialEvents.forEach {event ->
-            indicators[event] = solver.makeIntVar(0.0, Double.POSITIVE_INFINITY, getNextVarId())
+            eventIndicators[event] = solver.makeIntVar(0.0, Double.POSITIVE_INFINITY, getNextVarId())
         }
 
         setupObservationConstraints(solver)
-        setupRequirementsConstraints(solver, 1) { listOf(it.primaryAgent) }
-        setupRequirementsConstraints(solver, 100) { it.secondaryRequirements }
+        val primaryConstraints = setupRequirementsConstraints(solver, -1.0) { setOf(it.primaryAgent) }
+        previousState.addConsequencesToConstraints(primaryConstraints, 1.0)
+        previousState.addSourcesToConstraints(primaryConstraints, -1.0, false)
+
+//        setupRequirementsConstraints(solver, 100, -1) { it.secondaryRequirements }
+        // TODO: Add secondary and absence constraints
+
+        setupObjective(solver)
+    }
+
+
+    fun setupCompleteSolution(solver: MPSolver) {
+        // setup vars
+        println("Setting up complete solution")
+        eventIndicators.clear()
+        footprintIndicators.clear()
+        potentialEvents.forEach {event ->
+            eventIndicators[event] = solver.makeIntVar(0.0, Double.POSITIVE_INFINITY, getNextVarId())
+        }
+
+        val footprintIndicatorGTConstraints = HashMap<AGENT,MPConstraint>()
+        val footprintIndicatorLTConstraints = HashMap<AGENT,MPConstraint>()
+        allRequirementsFootprint.forEach { agent ->
+            val indicator = solver.makeIntVar(0.0,1.0,getNextVarId())
+            val gtConstraint = solver.makeConstraint()
+            gtConstraint.setCoefficient(indicator, 100.0)
+            val ltConstraint = solver.makeConstraint()
+            ltConstraint.setCoefficient(indicator, -1.0)
+            footprintIndicators[agent] = indicator
+            footprintIndicatorGTConstraints[agent] = gtConstraint
+            footprintIndicatorLTConstraints[agent] = ltConstraint
+        }
+        previousState.addConsequencesToConstraints(footprintIndicatorGTConstraints, -1.0)
+        previousState.addSourcesToConstraints(footprintIndicatorGTConstraints, 1.0, false)
+        previousState.addConsequencesToConstraints(footprintIndicatorLTConstraints, 1.0)
+        previousState.addSourcesToConstraints(footprintIndicatorLTConstraints, -1.0, false)
+
+        setupObservationConstraints(solver)
+
+        val primaryConstraints = setupRequirementsConstraints(solver, -1.0) { setOf(it.primaryAgent) }
+        previousState.addConsequencesToConstraints(primaryConstraints, 1.0)
+        previousState.addSourcesToConstraints(primaryConstraints, -1.0, true)
+
+        val secondaryConstraints = setupRequirementsConstraints(solver, -1.0) { it.secondaryRequirements }
+        secondaryConstraints.forEach { (agent, constraint) ->
+            constraint.setCoefficient(footprintIndicators[agent], 100.0)
+            constraint.setBounds(0.0, Double.POSITIVE_INFINITY)
+        }
+
+        val absenceConstraints = setupRequirementsConstraints(solver, -1.0) { it.absenceRequirements }
+        absenceConstraints.forEach { (agent, constraint) ->
+            constraint.setCoefficient(footprintIndicators[agent], -100.0)
+            constraint.setBounds(-100.0, Double.POSITIVE_INFINITY)
+        }
+
         setupObjective(solver)
     }
 
 
     fun applySolution() {
         val newCommitedEvents = ArrayList<Event<AGENT>>()
-        indicators.forEach {(event, mpVar) ->
+        eventIndicators.forEach { (event, mpVar) ->
             for(i in 1..mpVar.solutionValue().toInt()) newCommitedEvents.add(event)
         }
         // check secondary requirements are met
@@ -68,6 +126,12 @@ class Timestep<AGENT>: ModelState<AGENT> {
             if(!previousState.sources.containsAll(it.secondaryRequirements))
                 throw(IllegalStateException("Solution orbit does not meet secondary requirements for event $it"))
         }
+        // check absence requirements are met
+        newCommitedEvents.forEach {
+            if(!previousState.sources.intersect(it.absenceRequirements).isEmpty())
+                throw(IllegalStateException("Solution orbit does not meet absence requirements for event $it"))
+        }
+
         newCommitedEvents.forEach { event ->
             val primaryAgentRemoved = previousState.sources.remove(event.primaryAgent)
             if(!primaryAgentRemoved) throw(IllegalStateException("Solution orbit does not meet primary requirements for event $event"))
@@ -87,42 +151,72 @@ class Timestep<AGENT>: ModelState<AGENT> {
             val satisfyObservation = solver.makeConstraint(nObserved.toDouble(), Double.POSITIVE_INFINITY)
             val relevantEvents = hamiltonian.eventsWithConsequence(agent).intersect(potentialEvents)
             relevantEvents.forEach { event ->
-                satisfyObservation.setCoefficient(indicators[event], event.consequences.count(agent).toDouble())
+                satisfyObservation.setCoefficient(eventIndicators[event], event.consequences.count(agent).toDouble())
             }
         }
     }
 
 
-    fun setupRequirementsConstraints(solver: MPSolver, multiplier: Int, requiredAgents: (Event<AGENT>) -> Collection<AGENT>) {
+    // Sets up requirement constraints for this timestep such that for each required agent state
+    // -previousMultiplier * sources_{t-1,agent} <=
+    //      previousMultiplier * (sum_{event_{t-1}} event(consequences in agent)*i_event)
+    //      + thisMultiplier * (sum_{event_t} agent \in requiredAgents(event)*i_event)
+    fun setupRequirementsConstraints(solver: MPSolver, multiplier: Double, requiredAgents: (Event<AGENT>) -> Set<AGENT>): Map<AGENT, MPConstraint> {
         val requirementConstraints = HashMap<AGENT, MPConstraint>()
-        indicators.forEach {(event, mpvar) ->
+        eventIndicators.forEach { (event, mpvar) ->
             requiredAgents(event).forEach { agent ->
-                val constraint = requirementConstraints.getOrPut(agent) {
-                    val c = solver.makeConstraint()
-                    previousState.addConsequencesToConstraint(c, agent, multiplier)
-                    c
-                }
-                constraint.setCoefficient(mpvar, -1.0)
+                val constraint = requirementConstraints.getOrPut(agent) { solver.makeConstraint() }
+                constraint.setCoefficient(mpvar, multiplier)
             }
         }
+        return requirementConstraints
     }
+
 
     fun setupObjective(solver: MPSolver) {
         val obj = solver.objective()
-        indicators.forEach {(event, mpVar) ->
+        eventIndicators.forEach { (event, mpVar) ->
             obj.setCoefficient(mpVar, ln(event.rate))
         }
     }
 
 
-    override fun addConsequencesToConstraint(constraint: MPConstraint, agent: AGENT, multiplier: Int) {
-        hamiltonian.eventsWithConsequence(agent).forEach {event ->
-            indicators[event]?.also { mpVar ->
-                constraint.setCoefficient(mpVar, multiplier * event.consequences.count(agent).toDouble())
+    // Adds the consequences of this timestep for the given agent state to the given constraint
+    // so that
+    // -multiplier * sources_agent <= multiplier*(sum_event event_{consequences in agent}) + ...
+//    override fun addConsequencesToConstraint(constraint: MPConstraint, agent: AGENT, multiplier: Int, equality: Boolean) {
+//        hamiltonian.eventsWithConsequence(agent).forEach {event ->
+//            eventIndicators[event]?.also { mpVar ->
+//                constraint.setCoefficient(mpVar, multiplier * event.consequences.count(agent).toDouble())
+//            }
+//        }
+//        constraint.setBounds(
+//            -multiplier * sources.count(agent).toDouble(),
+//            if(equality) -multiplier * sources.count(agent).toDouble() else Double.POSITIVE_INFINITY
+//        )
+//    }
+
+
+    override fun addConsequencesToConstraints(constraints: Map<AGENT, MPConstraint>, multiplier: Double) {
+        constraints.forEach { (agent, constraint) ->
+            hamiltonian.eventsWithConsequence(agent).forEach { event ->
+                eventIndicators[event]?.also { mpVar ->
+                    constraint.setCoefficient(mpVar, multiplier * event.consequences.count(agent).toDouble())
+                }
             }
         }
-        constraint.setBounds(-sources.count(agent).toDouble(), Double.POSITIVE_INFINITY)
     }
+
+//    override fun addSourcesToConstraints(constraints: Map<AGENT, MPConstraint>, multiplier: Double, equality: Boolean) {
+//        constraints.forEach { (agent, constraint) ->
+//            constraint.setBounds(
+//                multiplier * sources.count(agent),
+//                if(equality) multiplier * sources.count(agent) else Double.POSITIVE_INFINITY
+//            )
+//        }
+//    }
+
+
 
 
     fun rollback(): Boolean {

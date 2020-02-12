@@ -3,11 +3,13 @@ import lib.MutableMultiset
 import lib.toMutableMultiset
 import java.lang.IllegalArgumentException
 
-class Event<AGENT>(val requirements: Set<AGENT>, val consequences: Multiset<AGENT>, val rate: Double, val primaryAgent: AGENT) {
+class Event<AGENT>(val requirements: Set<AGENT>, val absenceRequirements: Set<AGENT>, val consequences: Multiset<AGENT>, val rate: Double, val primaryAgent: AGENT) {
     val additions: MutableMultiset<AGENT>
         get() = consequences - requirements
     val secondaryRequirements: Set<AGENT>
         get() = requirements.minus(primaryAgent)
+    val totalRequirements: Set<AGENT>
+        get() = requirements.union(absenceRequirements)
 
 //    val deletions: Set<AGENT>
 //        get() = requirements - consequences.counts.keys
@@ -18,7 +20,14 @@ class Event<AGENT>(val requirements: Set<AGENT>, val consequences: Multiset<AGEN
     }
 
     fun rateFor(state: Multiset<AGENT>): Double {
-        return requirements.fold(rate) {r, agent -> r*state.count(agent)}
+        return rateFor(state.supportSet)
+//        return requirements.fold(rate) {r, agent -> r*state.count(agent)}
+    }
+
+    fun rateFor(state: Set<AGENT>): Double {
+        if(state.intersect(absenceRequirements).isNotEmpty()) return 0.0
+        if(!state.containsAll(requirements)) return 0.0
+        return rate
     }
 
     fun actOn(state: Multiset<AGENT>): MutableMultiset<AGENT> {
@@ -36,7 +45,7 @@ class Event<AGENT>(val requirements: Set<AGENT>, val consequences: Multiset<AGEN
     }
 
     fun modifiedAgents(): Set<AGENT> {
-        return additions.distinctSet.union(setOf(primaryAgent))
+        return additions.supportSet.union(setOf(primaryAgent))
     }
 
     fun deltas(): Map<AGENT,Int> {
@@ -45,7 +54,7 @@ class Event<AGENT>(val requirements: Set<AGENT>, val consequences: Multiset<AGEN
             d[it] = -1
         }
         consequences.counts.forEach {
-            d.compute(it.key) { agent, oldCount ->
+            d.compute(it.key) { _, oldCount ->
                 val newCount = (oldCount?:0) + it.value
                 if(newCount == 0) null else newCount
             }
@@ -54,6 +63,7 @@ class Event<AGENT>(val requirements: Set<AGENT>, val consequences: Multiset<AGEN
     }
 
     override fun toString(): String {
-        return "${requirements} -> ${consequences}"
+        if(secondaryRequirements.isEmpty()) return "$primaryAgent -> ${consequences}"
+        return "$primaryAgent[${secondaryRequirements}] -> ${consequences}"
     }
 }

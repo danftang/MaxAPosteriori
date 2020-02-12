@@ -1,15 +1,16 @@
 fun main() {
     System.loadLibrary("jniortools")
 
-    val INITIAL_WINDOW_LEN = 2
-    val WINDOW_LEN = 2
+    val WINDOW_LEN = 6
     val TOTAL_STEPS = 15
     val myModel = PredPreyModel(StandardParams)
     val startState = myModel.randomState(50)
-    val observations = myModel.generateObservations(startState, TOTAL_STEPS, 0.5)
-    val windows = observations.drop(1).windowed(WINDOW_LEN, WINDOW_LEN, true) {window ->
-        window.map { obs -> obs.observation }
-    }
+    val observations = myModel.generateObservations(startState, TOTAL_STEPS, 1.0)
+    val windows = observations
+        .drop(1)
+        .windowed(WINDOW_LEN, WINDOW_LEN, true) {window ->
+            window.map { obs -> obs.observation }
+        }
     println("Real orbit")
     observations.forEach {println(it.realState)}
     println("Observations")

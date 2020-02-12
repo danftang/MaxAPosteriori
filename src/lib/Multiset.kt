@@ -1,11 +1,12 @@
 package lib
 
+import kotlin.math.max
 import kotlin.math.min
 
 interface Multiset<T>: Set<T> {
     val counts: Map<T,Int>
 
-    val distinctSet: Set<T>
+    val supportSet: Set<T>
         get() = counts.keys
 
     fun count(m : T) : Int {
@@ -13,14 +14,14 @@ interface Multiset<T>: Set<T> {
     }
 
     fun union(other : Multiset<T>) : MutableMultiset<T> {
-        val result = this.toMutableMultiset()
-        other.counts.entries.forEach { result.counts.merge(it.key, it.value, Int::plus) }
+        val result = other.toMutableMultiset()
+        this.counts.forEach { result.merge(it.key, it.value, ::max) }
         return result
     }
 
     fun union(other : Iterable<T>) : MutableMultiset<T> {
-        val result = this.toMutableMultiset()
-        other.forEach { result.counts.merge(it, 1, Int::plus) }
+        val result = other.toMutableMultiset()
+        this.counts.forEach { result.merge(it.key, it.value, ::max) }
         return result
     }
 
@@ -43,7 +44,7 @@ interface Multiset<T>: Set<T> {
 
 
     operator fun minus(other: Multiset<T>): MutableMultiset<T> {
-        val result = this.toMutableMultiset()
+        val result = HashMultiset<T>()
         counts.forEach { entry ->
             val newCount = entry.value - other.count(entry.key)
             if(newCount > 0) result.add(entry.key, newCount)
@@ -55,20 +56,14 @@ interface Multiset<T>: Set<T> {
 
     fun subtract(other: Iterable<T>): MutableMultiset<T> {
         val result = this.toMutableMultiset()
-        other.forEach {
-            result.counts.computeIfPresent(it) { _, currentCount ->
-                if(currentCount == 1) null else currentCount - 1
-            }
-        }
+        other.forEach { result.remove(it) }
         return result
     }
 
 
     operator fun plus(other: Iterable<T>): MutableMultiset<T> {
         val result = this.toMutableMultiset()
-        other.forEach {
-            result.counts.merge(it, 1, Int::plus)
-        }
+        other.forEach { result.add(it) }
         return result
     }
 

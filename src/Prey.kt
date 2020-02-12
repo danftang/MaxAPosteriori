@@ -6,10 +6,19 @@ class Prey : Agent {
 
     fun hamiltonian(h: Hamiltonian<Agent>, params: Params) {
         reproduce(h, params)
-        diffuse(h, params.GRIDSIZE, params.preyDiffuse)
+        diffuse(h, params)
         die(h, params.preyDie)
         beEaten(h, params)
         beEatenAndReplaced(h, params)
+    }
+
+    fun diffuse(h: Hamiltonian<Agent>, params: Params) {
+        val rate = params.preyDiffuse
+        val size = params.GRIDSIZE
+        h += action(rate/4.0, setOf(Predator(right(size))), Prey(right(size)))
+        h += action(rate/4.0, setOf(Predator(left(size))), Prey(left(size)))
+        h += action(rate/4.0, setOf(Predator(up(size))), Prey(up(size)))
+        h += action(rate/4.0, setOf(Predator(down(size))), Prey(down(size)))
     }
 
     fun reproduce(h: Hamiltonian<Agent>, params: Params) {
@@ -23,20 +32,20 @@ class Prey : Agent {
 
     fun beEaten(h: Hamiltonian<Agent>, params: Params) {
         if(params.predCaptureOnly > 0.0) {
-            h += interaction(params.predCaptureOnly, Predator(pos))
-            h += interaction(params.predCaptureOnly, Predator(right(params.GRIDSIZE)))
-            h += interaction(params.predCaptureOnly, Predator(left(params.GRIDSIZE)))
-            h += interaction(params.predCaptureOnly, Predator(up(params.GRIDSIZE)))
-            h += interaction(params.predCaptureOnly, Predator(down(params.GRIDSIZE)))
+//            h += interaction(params.predCaptureOnly / 4.0, Predator(pos))
+            h += interaction(params.predCaptureOnly / 4.0, Predator(right(params.GRIDSIZE)))
+            h += interaction(params.predCaptureOnly / 4.0, Predator(left(params.GRIDSIZE)))
+            h += interaction(params.predCaptureOnly / 4.0, Predator(up(params.GRIDSIZE)))
+            h += interaction(params.predCaptureOnly / 4.0, Predator(down(params.GRIDSIZE)))
         }
     }
 
     fun beEatenAndReplaced(h: Hamiltonian<Agent>, params: Params) {
         if(params.predCaptureAndReproduce > 0.0) {
-            h += interaction(params.predCaptureAndReproduce, Predator(right(params.GRIDSIZE)), Predator(pos))
-            h += interaction(params.predCaptureAndReproduce, Predator(left(params.GRIDSIZE)), Predator(pos))
-            h += interaction(params.predCaptureAndReproduce, Predator(up(params.GRIDSIZE)), Predator(pos))
-            h += interaction(params.predCaptureAndReproduce, Predator(down(params.GRIDSIZE)), Predator(pos))
+            h += interaction(params.predCaptureAndReproduce / 4.0, Predator(right(params.GRIDSIZE)), Predator(pos))
+            h += interaction(params.predCaptureAndReproduce / 4.0, Predator(left(params.GRIDSIZE)), Predator(pos))
+            h += interaction(params.predCaptureAndReproduce / 4.0, Predator(up(params.GRIDSIZE)), Predator(pos))
+            h += interaction(params.predCaptureAndReproduce / 4.0, Predator(down(params.GRIDSIZE)), Predator(pos))
         }
     }
 

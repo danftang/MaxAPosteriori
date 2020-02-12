@@ -1,16 +1,11 @@
 import lib.toMutableMultiset
 import java.io.Serializable
+import kotlin.math.abs
 
 abstract class Agent(val pos: Int): Serializable {
     abstract fun copyAt(id: Int): Agent
 
 
-    fun diffuse(h: Hamiltonian<Agent>, size: Int, rate: Double) {
-        h += action(rate/4.0, copyAt(right(size)))
-        h += action(rate/4.0, copyAt(left(size)))
-        h += action(rate/4.0, copyAt(up(size)))
-        h += action(rate/4.0, copyAt(down(size)))
-    }
 
 
     fun die(h: Hamiltonian<Agent>, rate: Double) {
@@ -24,16 +19,27 @@ abstract class Agent(val pos: Int): Serializable {
 
 
     fun action(rate: Double, vararg addedAgents: Agent) : Event<Agent> {
-        return Event(setOf(this), addedAgents.toMutableMultiset(), rate, this)
+        return Event(setOf(this), emptySet(), addedAgents.toMutableMultiset(), rate, this)
+    }
+
+
+    fun action(rate: Double, absences: Set<Agent>, vararg addedAgents: Agent) : Event<Agent> {
+        return Event(setOf(this), absences, addedAgents.toMutableMultiset(), rate, this)
     }
 
 
     fun interaction(rate: Double, otherAgent: Agent, vararg addedAgents: Agent) : Event<Agent> {
         val added = addedAgents.toMutableMultiset()
         added.add(otherAgent) // require other agent is unchanged
-        return Event(setOf(this, otherAgent), added, rate, this)
+        return Event(setOf(this, otherAgent), emptySet(), added, rate, this)
     }
 
+
+    fun interaction(rate: Double, otherAgent: Agent, absences: Set<Agent>, vararg addedAgents: Agent) : Event<Agent> {
+        val added = addedAgents.toMutableMultiset()
+        added.add(otherAgent) // require other agent is unchanged
+        return Event(setOf(this, otherAgent), absences, added, rate, this)
+    }
 
 //    fun translate(transVector: Int, gridSize: Int): Agent {
 //        val newX = (pos + transVector + gridSize).rem(gridSize)

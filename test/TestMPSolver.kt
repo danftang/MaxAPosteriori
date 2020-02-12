@@ -24,6 +24,7 @@ class TestMPSolver {
         obj.setMaximization()
 
         println("solving for ${solver.numVariables()} variables and ${solver.numConstraints()} constraints")
+
         val solveState = solver.solve()
 
         println("solveState = $solveState")

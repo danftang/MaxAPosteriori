@@ -26,12 +26,29 @@ class MAPOrbitSolver<AGENT> {
     }
 
 
+    fun completeSolve() {
+        println("Starting complete solve")
+        val solver = MPSolver("HamiltonianSolver", MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING)
+        calculatePotentialEvents()
+
+        timesteps.forEach { it.setupCompleteSolution(solver) }
+        solver.objective().setMaximization()
+        println("solving for ${solver.numVariables()} variables and ${solver.numConstraints()} constraints")
+        val solveState = solver.solve()
+        println("solveState = $solveState")
+
+        timesteps.forEach {
+            it.applySolution()
+        }
+
+    }
+
     fun solve() {
         do {
             val solver = MPSolver("HamiltonianSolver", MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING)
             calculatePotentialEvents()
 
-            timesteps.forEach { it.setupProblem(solver) }
+            timesteps.forEach { it.setupPartialSolution(solver) }
             solver.objective().setMaximization()
             println("solving for ${solver.numVariables()} variables and ${solver.numConstraints()} constraints")
             val solveState = solver.solve()

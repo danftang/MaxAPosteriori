@@ -17,7 +17,7 @@ open class Hamiltonian<AGENT>: ArrayList<Event<AGENT>>() {
     fun eventsThatChange(agent: AGENT) = deltaIndex[agent]?:emptySet()
 
 
-    fun eventsSatisfiedBy(footprint: Set<AGENT>): List<Event<AGENT>> {
+    fun eventsPresenceSatisfiedBy(footprint: Set<AGENT>): List<Event<AGENT>> {
         return footprint.flatMap { agent ->
             eventsWithPrimaryRequirement(agent)
                 .filter { event -> footprint.containsAll(event.requirements) }
