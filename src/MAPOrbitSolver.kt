@@ -1,13 +1,18 @@
 import com.google.ortools.linearsolver.MPSolver
 import lib.Multiset
+import lib.emptyMultiset
+import java.io.*
 import java.lang.IllegalStateException
 import java.util.*
 
-class MAPOrbitSolver<AGENT> {
+class MAPOrbitSolver<AGENT>: Serializable {
     val timesteps = ArrayDeque<Timestep<AGENT>>()
-    val startState: ModelState<AGENT>
+    val startState: UnknownModelState<AGENT>
     val hamiltonian: Hamiltonian<AGENT>
 //    var solver: MPSolver
+
+    val trajectory: List<Multiset<AGENT>>
+        get() = timesteps.map { it.committedState }
 
     constructor(hamiltonian: Hamiltonian<AGENT>, startState: Multiset<AGENT>) {
         this.hamiltonian = hamiltonian
@@ -21,6 +26,8 @@ class MAPOrbitSolver<AGENT> {
     }
 
 
+
+
     fun addObservations(observations: Iterable<Multiset<AGENT>>) {
         observations.forEach { addObservation(it) }
     }
@@ -29,10 +36,9 @@ class MAPOrbitSolver<AGENT> {
     fun completeSolve() {
         println("Starting complete solve")
         val solver = MPSolver("HamiltonianSolver", MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING)
-        calculatePotentialEvents()
+        timesteps.forEach { it.addForwardEvents() }
 
-        timesteps.forEach { it.setupCompleteSolution(solver) }
-        solver.objective().setMaximization()
+        timesteps.forEach { it.setupProblem(solver, true) }
         println("solving for ${solver.numVariables()} variables and ${solver.numConstraints()} constraints")
         val solveState = solver.solve()
         println("solveState = $solveState")
@@ -43,13 +49,12 @@ class MAPOrbitSolver<AGENT> {
 
     }
 
-    fun solve() {
+    fun minimalSolve() {
         do {
             val solver = MPSolver("HamiltonianSolver", MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING)
-            calculatePotentialEvents()
+            calculateForwardBackwardPotentialEvents()
 
-            timesteps.forEach { it.setupPartialSolution(solver) }
-            solver.objective().setMaximization()
+            timesteps.forEach { it.setupProblem(solver, false) }
             println("solving for ${solver.numVariables()} variables and ${solver.numConstraints()} constraints")
             val solveState = solver.solve()
             println("solveState = $solveState")
@@ -64,21 +69,32 @@ class MAPOrbitSolver<AGENT> {
                 if(!doneRollback) throw(IllegalStateException("Unsolvable state"))
             }
 
+            timesteps.forEach {
+                it.applySolution()
+            }
+
         } while(solveState == MPSolver.ResultStatus.INFEASIBLE)
 
-        timesteps.forEach {
-            it.applySolution()
+    }
+
+
+    fun removeDeadAgents(maxStepsUnseen: Int) {
+        timesteps.descendingIterator().asSequence().drop(maxStepsUnseen-1).forEach { timestep ->
+            timestep.previousState.sources.forEach { agent ->
+                timestep.committedEvents.add(Event(setOf(agent), emptySet(), emptyMultiset(), 1.0, agent))
+            }
+            timestep.previousState.sources.clear()
         }
     }
 
 
-    private fun calculatePotentialEvents() {
+    private fun calculateForwardBackwardPotentialEvents() {
         timesteps.forEach { it.addForwardEvents() }
         var forwardRequirements: Set<AGENT> = emptySet()
         timesteps.descendingIterator().forEach { timestep ->
             timestep.filterBackwardEvents(forwardRequirements)
             forwardRequirements = timestep.requirementsFootprint
         }
-
     }
+
 }

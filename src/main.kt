@@ -1,10 +1,11 @@
 fun main() {
     System.loadLibrary("jniortools")
 
-    val WINDOW_LEN = 6
+    val WINDOW_LEN = 5
     val TOTAL_STEPS = 15
-    val myModel = PredPreyModel(StandardParams)
-    val startState = myModel.randomState(50)
+    val params = StandardParams
+    val myModel = PredPreyModel(params)
+    val startState = PredPreyModel.randomState(50, params)
     val observations = myModel.generateObservations(startState, TOTAL_STEPS, 1.0)
     val windows = observations
         .drop(1)
@@ -23,10 +24,10 @@ fun main() {
     windows.forEach {window ->
         println("Adding window $window")
         mySolver.addObservations(window)
-        mySolver.solve()
+        mySolver.minimalSolve()
 
         println("MAP orbit is")
-        mySolver.timesteps.forEach { println(it.commitedEvents) }
+        mySolver.timesteps.forEach { println(it.committedEvents) }
         println("history is")
         println(startState)
         mySolver.timesteps.forEach { println(it.committedState) }
@@ -34,7 +35,7 @@ fun main() {
         println(mySolver.startState.sources)
         mySolver.timesteps.forEach { println(it.sources) }
 
-        removeDeadAgents(mySolver, myModel, 8)
+//        removeDeadAgents(mySolver, myModel, 8)
     }
 }
 
@@ -42,7 +43,7 @@ fun removeDeadAgents(solver: MAPOrbitSolver<Agent>, model: PredPreyModel, maxSte
     solver.timesteps.descendingIterator().asSequence().drop(maxStepsUnseen-1).forEach { timestep ->
         timestep.previousState.sources.forEach { agent ->
             model.deathEvents[agent]?.also {
-                timestep.commitedEvents.add(it)
+                timestep.committedEvents.add(it)
             }
         }
         timestep.previousState.sources.clear()

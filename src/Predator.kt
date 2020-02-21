@@ -14,10 +14,11 @@ class Predator : Agent {
     }
 
     fun diffuse(h: Hamiltonian<Agent>, size: Int, rate: Double) {
-        h += action(rate/4.0, copyAt(right(size)))
-        h += action(rate/4.0, copyAt(left(size)))
-        h += action(rate/4.0, copyAt(up(size)))
-        h += action(rate/4.0, copyAt(down(size)))
+        h += action(rate/5.0, copyAt(right(size)))
+        h += action(rate/5.0, copyAt(left(size)))
+        h += action(rate/5.0, copyAt(up(size)))
+        h += action(rate/5.0, copyAt(down(size)))
+        h += action(rate/5.0, this)
     }
 
 //    fun capture(h: Hamiltonian<Agent>, params: Params) {

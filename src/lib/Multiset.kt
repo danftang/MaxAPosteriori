@@ -89,6 +89,8 @@ interface Multiset<T>: Set<T> {
 
 }
 
+fun <T>emptyMultiset(): Multiset<T> = emptySet<T>().asMultiSet()
+
 fun <T>Set<T>.asMultiSet(): Multiset<T> {
     val set = this
     return object: Multiset<T> {

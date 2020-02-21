@@ -24,10 +24,10 @@ object StandardParams : Params(
         0.06,
         0.91,
 
-        0.07,
-        0.091,       // captures must add up to preyDiffuse
-        0.819,
-        0.93            // predDiffuse + predDie should add to 1.0
+        0.05,
+        0.0,       // captures must add up to preyDiffuse
+        0.91,
+        0.95            // predDiffuse + predDie should add to 1.0
 )
 
 object TenByTenParams : Params(

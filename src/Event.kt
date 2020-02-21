@@ -1,9 +1,10 @@
 import lib.Multiset
 import lib.MutableMultiset
 import lib.toMutableMultiset
+import java.io.Serializable
 import java.lang.IllegalArgumentException
 
-class Event<AGENT>(val requirements: Set<AGENT>, val absenceRequirements: Set<AGENT>, val consequences: Multiset<AGENT>, val rate: Double, val primaryAgent: AGENT) {
+class Event<AGENT>(val requirements: Set<AGENT>, val absenceRequirements: Set<AGENT>, val consequences: Multiset<AGENT>, val rate: Double, val primaryAgent: AGENT): Serializable {
     val additions: MutableMultiset<AGENT>
         get() = consequences - requirements
     val secondaryRequirements: Set<AGENT>
@@ -25,10 +26,11 @@ class Event<AGENT>(val requirements: Set<AGENT>, val absenceRequirements: Set<AG
     }
 
     fun rateFor(state: Set<AGENT>): Double {
-        if(state.intersect(absenceRequirements).isNotEmpty()) return 0.0
+        absenceRequirements.forEach { if(state.contains(it)) return 0.0 }
         if(!state.containsAll(requirements)) return 0.0
         return rate
     }
+
 
     fun actOn(state: Multiset<AGENT>): MutableMultiset<AGENT> {
         val result = state.toMutableMultiset()

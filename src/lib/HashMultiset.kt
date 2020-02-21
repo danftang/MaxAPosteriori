@@ -1,6 +1,8 @@
 package lib
 
-class HashMultiset<T>(private val mutableCounts: HashMap<T,Int> = HashMap()): MutableMultiset<T> {
+import java.io.Serializable
+
+class HashMultiset<T>(private val mutableCounts: HashMap<T,Int> = HashMap()): MutableMultiset<T>, Serializable {
     override val counts: Map<T,Int>
         get() = mutableCounts
     override var size : Int = 0

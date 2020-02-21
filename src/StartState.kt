@@ -1,10 +1,10 @@
 import com.google.ortools.linearsolver.MPConstraint
-import com.google.ortools.linearsolver.MPVariable
 import lib.HashMultiset
 import lib.Multiset
 import lib.MutableMultiset
+import java.io.Serializable
 
-class StartState<AGENT>: ModelState<AGENT> {
+class StartState<AGENT>: UnknownModelState<AGENT>, Serializable {
     override val sources: MutableMultiset<AGENT>
     override val consequencesFootprint: Set<AGENT>
         get() = sources.supportSet
@@ -16,5 +16,7 @@ class StartState<AGENT>: ModelState<AGENT> {
 
     override fun addConsequencesToConstraints(constraints: Map<AGENT, MPConstraint>, multiplier: Double) {
     }
+
+    override fun hasIndicators() = false
 
 }

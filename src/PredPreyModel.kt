@@ -1,15 +1,11 @@
-import com.google.ortools.linearsolver.MPSolver
-import com.google.ortools.linearsolver.MPVariable
 import lib.*
-import kotlin.math.ln
+import java.io.Serializable
 import kotlin.random.Random
 
 class PredPreyModel: Hamiltonian<Agent> {
-    val solver: MPSolver
-    var X: Array<Map<Int,MPVariable>> // integer variables associated with every act in every timestep
     val deathEvents: Map<Agent,Event<Agent>>
 
-    data class Observation(val realState: Multiset<Agent>, val observation: Multiset<Agent>)
+    data class ObservedState(val realState: Multiset<Agent>, val observation: Multiset<Agent>): Serializable
 
     constructor(params: Params) : super() {
         deathEvents = HashMap()
@@ -20,17 +16,6 @@ class PredPreyModel: Hamiltonian<Agent> {
         this.filter { it.consequences.isEmpty() && it.secondaryRequirements.isEmpty() }.forEach {
             deathEvents[it.primaryAgent] = it
         }
-        X = emptyArray()
-        solver = MPSolver("HamiltonianSolver", MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING)
-    }
-
-
-    fun randomState(nAgents: Int): MutableMultiset<Agent> {
-        val state = HashMultiset<Agent>()
-        while(state.size < nAgents) {
-            state.add(allStates.random())
-        }
-        return state
     }
 
 
@@ -70,12 +55,13 @@ class PredPreyModel: Hamiltonian<Agent> {
 
             val lastState = state
             lastState.forEach {agent ->
-                val choices = MutableCategorical<Event<Agent>>()
-                primaryRequirementIndex[agent]?.forEach { act ->
-                    choices[act] = act.rateFor(lastState)
-                }
-                if(choices.size == 0) println("no choices for agent $agent from ${primaryRequirementIndex[agent]}")
-                val nextAct = choices.sample()
+                val cumulativeProb = Random.nextDouble()
+                val options = primaryRequirementIndex[agent]?:throw(IllegalStateException("No choices for agent $agent"))
+                var sum = 0.0
+                val nextAct = options.find { act ->
+                    sum += act.rateFor(lastState)
+                    sum > cumulativeProb
+                }?:options.last()
                 state = nextAct.actOn(state)
             }
             path.add(state)
@@ -84,8 +70,8 @@ class PredPreyModel: Hamiltonian<Agent> {
     }
 
 
-    fun generateObservations(startState: Multiset<Agent>, nSteps: Int, pObserve: Double): List<Observation> {
-        val observations = ArrayList<Observation>(nSteps)
+    fun generateObservations(startState: Multiset<Agent>, nSteps: Int, pObserve: Double): List<ObservedState> {
+        val observations = ArrayList<ObservedState>(nSteps)
 
         sampleTimesteppingPath(startState, nSteps).forEach { realState ->
             val observedState = HashMultiset<Agent>()
@@ -94,7 +80,7 @@ class PredPreyModel: Hamiltonian<Agent> {
                     observedState.add(agent)
                 }
             }
-            observations.add(Observation(realState, observedState))
+            observations.add(ObservedState(realState, observedState))
         }
         return(observations)
     }
@@ -108,5 +94,57 @@ class PredPreyModel: Hamiltonian<Agent> {
             else
                 this[act] = rate
         }
+    }
+
+    companion object {
+        fun plotTrajectory(trajectory: List<Multiset<Agent>>, gridSize: Int) {
+            val data = trajectory.map { frame ->
+                frame.supportSet.asSequence().flatMap { agent ->
+                    sequenceOf(agent.pos.rem(gridSize), agent.pos.div(gridSize), if(agent is Prey) 1 else 2)
+                }.toList()
+            }
+
+            gnuplot {
+                invoke("set linetype 1 lc 'red'")
+                invoke("set linetype 2 lc 'blue'")
+                data.forEach { frame ->
+                    val pointData = heredoc(frame,3)
+                    invoke("plot [0:$gridSize][0:$gridSize] $pointData with points pointtype 5 pointsize 0.5 lc variable")
+                    invoke("pause 0.04")
+                }
+            }
+        }
+
+
+        fun L1divergence(from: Multiset<Agent>, to: Multiset<Agent>, gridSize: Int) {
+            var totalDistance = 0.0
+            from.forEach {agent ->
+                
+            }
+        }
+
+        fun randomState(nAgents: Int, params: Params): Multiset<Agent> {
+            val state = HashMultiset<Agent>()
+            while(state.size < nAgents) {
+                val pos = Random.nextInt(params.GRIDSIZESQ)
+                val randAgent = if(Random.nextBoolean()) Predator(pos) else Prey(pos)
+                state.add(randAgent)
+            }
+            return state
+        }
+
+        fun randomState(nPredator: Int, nPrey: Int, params: Params): Multiset<Agent> {
+            val state = HashMultiset<Agent>()
+            for(i in 1..nPredator) {
+                val pos = Random.nextInt(params.GRIDSIZESQ)
+                state.add(Predator(pos))
+            }
+            for(i in 1..nPrey) {
+                val pos = Random.nextInt(params.GRIDSIZESQ)
+                state.add(Prey(pos))
+            }
+            return state
+        }
+
     }
 }

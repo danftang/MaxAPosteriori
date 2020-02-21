@@ -3,12 +3,11 @@ import com.google.ortools.linearsolver.MPVariable
 import lib.Multiset
 import lib.MutableMultiset
 
-interface ModelState<AGENT> {
+interface UnknownModelState<AGENT> {
     val consequencesFootprint: Set<AGENT>
     val sources: MutableMultiset<AGENT>
-//    val eventIndicators: Map<Event<AGENT>,MPVariable>
-//    val footprintIndicators: Map<AGENT,MPVariable>
-//    fun addConsequencesToConstraint(constraint: MPConstraint, agent: AGENT, multiplier: Int)
+
+    fun hasIndicators(): Boolean
 
     fun addConsequencesToConstraints(constraints: Map<AGENT, MPConstraint>, multiplier: Double)
 

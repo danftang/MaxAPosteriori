@@ -1,4 +1,6 @@
-open class Hamiltonian<AGENT>: ArrayList<Event<AGENT>>() {
+import java.io.Serializable
+
+open class Hamiltonian<AGENT>: ArrayList<Event<AGENT>>(), Serializable {
     val requirementIndex: Map<AGENT, Set<Event<AGENT>>>          by lazy { indexBy { it.requirements } }
     val primaryRequirementIndex: Map<AGENT, Set<Event<AGENT>>>   by lazy { indexBy { setOf(it.primaryAgent) } }
     val consequenceIndex: Map<AGENT, Set<Event<AGENT>>>          by lazy { indexBy { it.consequences } }
@@ -8,7 +10,7 @@ open class Hamiltonian<AGENT>: ArrayList<Event<AGENT>>() {
         }
     }
     val allStates: Set<AGENT>
-        get() = requirementIndex.keys
+        get() = primaryRequirementIndex.keys
 
     fun eventsWithRequirement(agent: AGENT) = requirementIndex[agent]?:emptySet()
     fun eventsWithPrimaryRequirement(agent: AGENT) = primaryRequirementIndex[agent]?:emptySet()
