@@ -12,7 +12,7 @@ class MAPOrbitSolver<AGENT>: Serializable {
 //    var solver: MPSolver
 
     val trajectory: List<Multiset<AGENT>>
-        get() = timesteps.map { it.committedState }
+        get() = timesteps.map { it.committedConsequences }
 
     constructor(hamiltonian: Hamiltonian<AGENT>, startState: Multiset<AGENT>) {
         this.hamiltonian = hamiltonian
@@ -80,10 +80,9 @@ class MAPOrbitSolver<AGENT>: Serializable {
 
     fun removeDeadAgents(maxStepsUnseen: Int) {
         timesteps.descendingIterator().asSequence().drop(maxStepsUnseen-1).forEach { timestep ->
-            timestep.previousState.sources.forEach { agent ->
+            timestep.hangingAgents.forEach { agent ->
                 timestep.committedEvents.add(Event(setOf(agent), emptySet(), emptyMultiset(), 1.0, agent))
             }
-            timestep.previousState.sources.clear()
         }
     }
 
@@ -93,7 +92,7 @@ class MAPOrbitSolver<AGENT>: Serializable {
         var forwardRequirements: Set<AGENT> = emptySet()
         timesteps.descendingIterator().forEach { timestep ->
             timestep.filterBackwardEvents(forwardRequirements)
-            forwardRequirements = timestep.requirementsFootprint
+            forwardRequirements = timestep.potentialRequirementsFootprint
         }
     }
 

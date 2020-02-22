@@ -107,3 +107,19 @@ fun <T>Set<T>.asMultiSet(): Multiset<T> {
     }
 }
 
+
+fun <T>Collection<T>.toMultiset(): Multiset<T> {
+    return this.toMutableMultiset()
+}
+
+fun <T>Iterable<T>.toMultiset(): Multiset<T> {
+    return this.toMutableMultiset()
+}
+
+fun <T>Sequence<T>.toMultiset(): Multiset<T> {
+    return this.toMutableMultiset()
+}
+
+fun <T>Array<out T>.toMultiset(): Multiset<T> {
+    return this.toMutableMultiset()
+}

@@ -2,30 +2,16 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="74e226ce-4e81-4f5a-b3f8-14355773cdf7" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/src/PredPreyProblem.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/test/ForwardSimTests.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/test/KDTreee2DTests.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/test/PlottingTests.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/test/SerializationTest.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/test/experiments/OfflineMAP.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/test/experiments/OnlineMAP.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/MaxAPosteriori.iml" beforeDir="false" afterPath="$PROJECT_DIR$/MaxAPosteriori.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/MaxAPosteriori.ipr" beforeDir="false" afterPath="$PROJECT_DIR$/MaxAPosteriori.ipr" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/MaxAPosteriori.iws" beforeDir="false" afterPath="$PROJECT_DIR$/MaxAPosteriori.iws" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/doc/MAPOrbitDraft.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/doc/MAPOrbitDraft.pdf" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/doc/MAPOrbitDraft.tex" beforeDir="false" afterPath="$PROJECT_DIR$/doc/MAPOrbitDraft.tex" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/doc/references.bib" beforeDir="false" afterPath="$PROJECT_DIR$/doc/references.bib" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Event.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/Event.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Hamiltonian.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/Hamiltonian.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/MAPOrbitSolver.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/MAPOrbitSolver.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/ModelState.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/UnknownModelState.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Params.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/Params.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/PredPreyModel.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/PredPreyModel.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Predator.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/Predator.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Prey.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/Prey.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/StartState.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/StartState.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Timestep.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/Timestep.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/UnknownModelState.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/UnknownModelState.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/lib/HashMultiset.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/HashMultiset.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/lib/Multiset.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/Multiset.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/MutableMultiset.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/MutableMultiset.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/test/TestMAPOrbitSolver.kt" beforeDir="false" afterPath="$PROJECT_DIR$/test/TestMAPOrbitSolver.kt" afterDir="false" />
     </list>
@@ -100,7 +86,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="JUnit.OnlineMAP.findAverageDivergence">
+  <component name="RunManager" selected="JUnit.TestMAPOrbitSolver.fullTrajectoryTest">
     <configuration name="OfflineMAP.findAverageDivergence" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
       <module name="MaxAPosteriori" />
       <extension name="coverage">
@@ -153,16 +139,6 @@
         <option name="Make" enabled="true" />
       </method>
     </configuration>
-    <configuration name="PlottingTests.comparisonPlotTest" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
-      <module name="MaxAPosteriori" />
-      <option name="PACKAGE_NAME" value="" />
-      <option name="MAIN_CLASS_NAME" value="PlottingTests" />
-      <option name="METHOD_NAME" value="comparisonPlotTest" />
-      <option name="TEST_OBJECT" value="method" />
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
-    </configuration>
     <configuration name="SerializationTest.loadProblem" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
       <module name="MaxAPosteriori" />
       <option name="PACKAGE_NAME" value="" />
@@ -173,20 +149,32 @@
         <option name="Make" enabled="true" />
       </method>
     </configuration>
+    <configuration name="TestMAPOrbitSolver.fullTrajectoryTest" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+      <module name="MaxAPosteriori" />
+      <option name="PACKAGE_NAME" value="" />
+      <option name="MAIN_CLASS_NAME" value="TestMAPOrbitSolver" />
+      <option name="METHOD_NAME" value="fullTrajectoryTest" />
+      <option name="TEST_OBJECT" value="method" />
+      <option name="VM_PARAMETERS" value="-ea -Djava.library.path=$PROJECT_DIR$/lib" />
+      <option name="PARAMETERS" value="" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
     <list>
       <item itemvalue="JUnit.OfflineMAP.findAverageDivergence" />
-      <item itemvalue="JUnit.PlottingTests.comparisonPlotTest" />
       <item itemvalue="JUnit.SerializationTest.loadProblem" />
       <item itemvalue="JUnit.OfflineMAP.loadDumpedSolutions" />
       <item itemvalue="JUnit.OnlineMAP.findAverageDivergence" />
+      <item itemvalue="JUnit.TestMAPOrbitSolver.fullTrajectoryTest" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="JUnit.TestMAPOrbitSolver.fullTrajectoryTest" />
         <item itemvalue="JUnit.OnlineMAP.findAverageDivergence" />
         <item itemvalue="JUnit.OfflineMAP.loadDumpedSolutions" />
         <item itemvalue="JUnit.OfflineMAP.findAverageDivergence" />
         <item itemvalue="JUnit.SerializationTest.loadProblem" />
-        <item itemvalue="JUnit.PlottingTests.comparisonPlotTest" />
       </list>
     </recent_temporary>
   </component>
@@ -246,6 +234,8 @@
       <workItem from="1582209285008" duration="6366000" />
       <workItem from="1582242116155" duration="723000" />
       <workItem from="1582285231876" duration="6578000" />
+      <workItem from="1582295484122" duration="6585000" />
+      <workItem from="1582385661408" duration="6556000" />
     </task>
     <servers />
   </component>

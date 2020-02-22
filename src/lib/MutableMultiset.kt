@@ -75,18 +75,10 @@ fun <T>Iterable<T>.toMutableMultiset(): MutableMultiset<T> {
     return HashMultiset(this)
 }
 
-fun <T>Array<out T>.toMutableMultiset(): MutableMultiset<T> {
+fun <T>Sequence<T>.toMutableMultiset(): MutableMultiset<T> {
     return HashMultiset(this)
 }
 
-fun <T>Collection<T>.toMultiset(): Multiset<T> {
-    return this.toMutableMultiset()
-}
-
-fun <T>Iterable<T>.toMultiset(): Multiset<T> {
-    return this.toMutableMultiset()
-}
-
-fun <T>Array<out T>.toMultiset(): Multiset<T> {
-    return this.toMutableMultiset()
+fun <T>Array<out T>.toMutableMultiset(): MutableMultiset<T> {
+    return HashMultiset(this)
 }

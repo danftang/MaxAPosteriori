@@ -172,85 +172,99 @@ P(\left<E_0...E_m\right>) = \prod_{i}\prod_{\epsilon\in E_i, }P(\epsilon)
 Bringing all this together, we can now express our problem precisely:
 
 Given a set of observations $\Omega$ and an agent behaviour $P(\Phi|\psi,R,\bar{R})$, find
-\[
+\begin{equation}
 \mathcal{E} = \arg\max_{\left<E_0...E_m\right>}\prod_{i}\prod_{\epsilon\in E_i, }P(\epsilon)
-\]
+\end{equation}
 subject to $\mathcal{E}$ being feasible and it's implied state trajectory satisfying $\Omega$.
 
 To turn this into a tractable algorithm, first represent an event trajectory as a set of non-negative integers $c_{te}$ such that in timestep $t$, the event $e$ occurs exactly $c_{te}$ times.
 
 Now encode each event in an agent's behaviour, $e = (\Phi|\psi,R,\bar{R})$, by letting 
-\[
+\begin{equation}
 \Phi_{e\phi} = n: \phi \in^n \Phi\\
-\]
-\[
+\end{equation}
+
+\begin{equation}
 \psi_{e\phi} = 
 \begin{cases}
 1&\text{if } \phi = \psi\\
 0&\text{otherwise}\\
 \end{cases}
-\]
-\[
+\end{equation}
+
+\begin{equation}
 R_{e\phi} =
 \begin{cases}
 1&\text{if } \phi \in R\\
 0&\text{otherwise}\\
 \end{cases}
-\]
-\[
+\end{equation}
+
+\begin{equation}
 \bar{R}_{e\phi} =
 \begin{cases}
 1&\text{if } \phi \in \bar{R}\\
 0&\text{otherwise}\\
 \end{cases}
-\]
+\end{equation}
+
 Now encode the observation predicates for each event's consequences
-\[
+\begin{equation}
 B_e = |\{\psi: \psi\in\Phi \wedge B(\psi)\}|
-\]
+\end{equation}
 and encode the probability of each event
 \[
 P_e = P(\Phi|\psi,R,\bar{R})
 \]
-finally, define a set of boolean variables $0 \le b_{t\phi} \le 1$ which satisfy
-\[
-Mb_{t\phi} \ge \sum_e  \Phi_{e\phi}c_{(t-1)e}
-\]
-\[
-b_{t\phi} \le \sum_e  \Phi_{e\phi}c_{(t-1)e}
-\]
+finally, let
+\begin{equation}
+\Psi_{t\phi} = \sum_e\Phi_{e\phi}c_{te}
+\label{stateIndicator}
+\end{equation}
+
+and define a set of boolean variables $0 \le b_{t\phi} \le 1$ which satisfy
+\begin{equation}
+0 \le Mb_{t\phi} - \Psi_{t\phi}
+\label{bGEconstraint}
+\end{equation}
+\begin{equation}
+0 \le \Psi_{t\phi} - b_{t\phi} 
+\label{bLEconstraint}
+\end{equation}
 for some \textit{multiplicity} $M$ which can be any number larger than the expected maximum number of agents in the model at any one time.
 
 We can now express the problem as:
 
 Maximise
-\[
+\begin{equation}
 P = \sum_t\sum_e \log(P_e)c_{te}
-\]
+\end{equation}
 subject to the observations being satisfied
-\[
+\begin{equation}
 \forall \Omega_t \in \mathcal{O}, \left<L,U,B\right> \in \Omega_t: L \le \sum_e B_e c_{te} \le U
-\]
+\label{observation}
+\end{equation}
 ...each agent performing exactly one action
 \begin{equation}
-\forall\phi: 0 \le \sum_e  \Phi_{e\phi}c_{(t-1)e} -  \sum_e\ \psi_{e\phi} c_{te} \le 0
+\forall\phi: 0 \le \Psi_{(t-1)\phi} -  \sum_e\ \psi_{e\phi} c_{te} \le 0
 \label{IPagency}
 \end{equation}
 ...each event's presence requirements being fulfilled
-\[
-\forall\phi: 0 \le Mb_{t\phi} - \sum_e\ R_{e\phi} c_{te} 
-\]
+\begin{equation}
+\forall\phi: 0 \le Mb_{(t-1)\phi} - \sum_e\ R_{e\phi} c_{te} 
+\end{equation}
 ...each event's absence requirements being fulfilled
-\[
-\forall\phi: \sum_e\ \bar{R}_{e\phi} c_{te} + Mb_{t\phi} \le M
-\]
+\begin{equation}
+\forall\phi: \sum_e\ \bar{R}_{e\phi} c_{te} + Mb_{(t-1)\phi} \le M
+\label{absenceConstraint}
+\end{equation}
 This can be seen to be in the form of a pure integer linear programming problem, which in full generality is NP complete, but for which there exists many algorithms that, in practice, are able to find solutions to reasonably large problems.
 
 
 \section{Online assimilation}
 %############################
 
-When using a model to make forecasts of the real world, observations arrive in a constant stream which may have no specific start or end. In this case, we would usually split the stream up into time \textit{windows} and update the forecasts one window at a time. However, if we commit to the maximum-a-posteriori explanation of one window, and use the end state of this explanation as the start state of the next window, we are in danger of being led down ``garden paths''; i.e. the observations lead us into believing the most probable explanation, only to later show us that a much less probable and completely incompatible explanation is in-fact the case. If the garden path is contained within a single window then the optimisation will deal with it, but if it stretches across windows, we may commit to believing events which, in the light of more evidence, turn out to be impossible. At this point the assimilation must stop because there is no event trajectory that satisfies the observations for the current window. To solve this problem, we present a second algorithm for use with streaming observations.
+Observations often arrive in a constant stream which may have no specific start or end. In this case, we would usually split the stream up into time \textit{windows} and update the forecasts one window at a time. However, if we commit to the maximum-a-posteriori explanation of one window, and use the end state of this explanation as the start state of the next window, we are in danger of being led down ``garden paths''; i.e. the observations lead us into believing the most probable explanation, only to later show us that a much less probable and completely incompatible explanation is in-fact the case. If the garden path is contained within a single window then the optimisation will deal with it, but if it stretches across windows, we may commit to believing events which, in the light of more evidence, turn out to be impossible. At this point the assimilation must stop because there is no event trajectory that satisfies the observations for the current window. To solve this problem, we present a second algorithm for use with streaming observations.
 
 We begin by defining the idea of a \textit{partial event trajectory} which is like a normal event trajectory except that instead of each agent having to perform exactly one action per timestep, they can perform at most one action per timestep. So, in the definition of satisfaction, in place of equation \ref{agency} we have
 \begin{equation}
@@ -258,23 +272,29 @@ We begin by defining the idea of a \textit{partial event trajectory} which is li
 \end{equation}
 In this case, we'll say that $\Psi$ partially satisfies $E$. Intuitively, a partial event trajectory can be interpreted as saying that at least these events happened in these timesteps, but other additional events may have happened concomitantly.
 
-This translates to the Integer programming constraint
+A solution to the resulting problem is a partial event trajectory that makes as few commitments as possible while satisfying the observations. In a partial trajectory, all observations are satisfied but only a subset of the agents present at any particular time will be moved forward by the next model event, so agents may be left hanging at a time in the middle of the trajectory. This is good, because it reduces the likelihood that we will be led down a garden path by delaying any commitment to the exhibited behaviour of the hanging agents until more observations are available.
+
+Once we've found a partial trajectory, we take the next window of observations and find the maximum-a-posteriori partial trajectory given these new observations and the partial trajectory we've already committed to. In order to correctly move hanging agents forward in time, we need to distinguish between the events that we've already committed to and the events we're optimising over. If we let $\hat{c}_{te}$ be the number of events of type $e$ that we've committed to in timestep $t$, then equation \ref{stateIndicator} becomes
 \begin{equation}
-\forall\phi: 0 \le \sum_e  \Phi_{e\phi}c_{(t-1)e} -  \sum_e\ \psi_{e\phi} c_{te}
+\Psi_{t\phi} -  \sum_e\Phi_{e\phi}c_{te} = \sum_e\Phi_{e\phi}\hat{c}_{te}
+\label{stateIndicator}
 \end{equation}
-in place of equation \ref{IPagency}.
 
-A solution to the resulting problem is a partial event trajectory that makes as few commitments as possible while satisfying the observations. In a partial trajectory, only a subset of the agents at any particular time will be moved forward by the next model event, so agents may be left hanging at a time in the middle of the trajectory. This is good, because it reduces the likelihood that we will be led down a garden path by delaying any commitment to the exhibited behaviour of the hanging agents until more observations are available.
 
-Once we've found a partial trajectory, we take the next window of observations and find the maximum-a-posteriori partial trajectory given these new observations. In order to correctly move hanging agents forward in time, they can be treated as part of the injected boundary conditions. However, because we have now committed to events in the hanging agents' future, we need to add the additional constraint that the absences we have committed to must be respected. This is easily done by removing the indicator variable $b_{t\phi}$ and adding the constraint
-\[
-0 \le \sum_e  \Phi_{e\phi}c_{(t-1)e} \le 0
-\]
-for each state $\phi$ that must be absent at time $t$.
+the agency constraint, equation \ref{IPagency}, becomes
+\begin{equation}
+\forall\phi:  \sum_e\ \psi_{e\phi}\hat{c}_{te} \le \Psi_{(t-1)\phi}  -  \sum_e\ \psi_{e\phi} c_{te}
+\end{equation}
+and the absence constraint, equation \ref{absenceConstraint}, becomes
+\begin{equation}
+\forall\phi: \sum_e\ \bar{R}_{e\phi} c_{te} + Mb_{(t-1)\phi} \le M - \sum_e\ \bar{R}_{e\phi} \hat{c}_{te}
+\end{equation}
 
-Even though partial trajectories reduce the probability of being led down the garden path, they do not eradicate it completely. So, if we end up with observations that seem impossible, we rollback the commitments, one timestep at a time, from the most recent until a solution becomes possible. In the worst case, we'll have to roll-back to $t=0$, but in practice the probability of this will be very small for most models.
+Since observations are fully satisfied by a partial trajectory, the observation constraints, equation \ref{observation}, now only apply to timesteps for which there are no committed events. The presence requirement constraints can remain unchanged.
 
-One final issue with online assimilation is dying agents (or agents that leave the model for some other reason). When an agent dies it will not be observed again, but the online assimilation will just leave it in the hanging state on the off-chance that it's still around and may be observed in the future. At some point we are likely to want to commit to saying that the agent has died. To do this we can estimate the probability of the agent evading observation for so long, and when this estimate falls below a certain level, we commit to it's death.
+Even though partial trajectories reduce the probability of us being led down the garden path, they do not eradicate it completely. So, if we end up with observations that are incompatible with our commitments, we rollback the commitments, one timestep at a time, from the most recent until a solution becomes possible. In the worst case, we'll have to roll-back all the way to $t=0$, but in practice the probability of this will be very small for most models.
+
+One final issue with online assimilation is dying agents (or agents that leave the model for some other reason). When an agent dies it will not be observed again, but the online assimilation will just leave it in the hanging state on the off-chance that it's still around but has evaded observation. At some point we are likely to want to commit to saying that the agent has died. To do this we can estimate the probability of the agent evading observation for so long, and when this estimate falls below a certain level, we commit to it's death. Since all agent events have a probability of at most $1.0$, it is most probable that the agent died immediately after last being observed.
 
 \section{Experiments with a spatial predator-prey model}
 %########################################################

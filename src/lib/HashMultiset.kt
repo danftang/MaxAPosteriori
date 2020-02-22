@@ -10,6 +10,10 @@ class HashMultiset<T>(private val mutableCounts: HashMap<T,Int> = HashMap()): Mu
 
     constructor(initialCapacity : Int) : this(HashMap(initialCapacity))
 
+    constructor(container : Sequence<T>) : this() {
+        container.forEach { add(it) }
+    }
+
     constructor(container : Iterable<T>) : this() {
         container.forEach { add(it) }
     }
