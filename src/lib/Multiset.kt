@@ -1,5 +1,6 @@
 package lib
 
+import java.io.Serializable
 import kotlin.math.max
 import kotlin.math.min
 
@@ -93,7 +94,7 @@ fun <T>emptyMultiset(): Multiset<T> = emptySet<T>().asMultiSet()
 
 fun <T>Set<T>.asMultiSet(): Multiset<T> {
     val set = this
-    return object: Multiset<T> {
+    return object: Serializable, Multiset<T> {
         override val counts: Map<T,Int>
             get() = set.associateWith { 1 }
         override val size: Int

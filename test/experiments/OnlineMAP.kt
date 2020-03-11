@@ -17,30 +17,31 @@ class OnlineMAP {
     @Test
     fun findAverageDivergence() {
         System.loadLibrary("jniortools")
-        val pObserve = 0.5
-        val nPredator = 40
-        val nPrey = 60
+        val pObserve = 0.75
+        val nPredator = 20
+        val nPrey = 30
         val WINDOW_LEN = 1
-        val nSteps = 7
+        val nSteps = 10
         val params = StandardParams
 
-        val problem = setupPredPreyProblem(pObserve, nPredator, nPrey, nSteps, params)
-//        val problem = File("problemOnline0.dump").readObject<PredPreyProblem>()
+        val problem = setupPredPreyProblem(nPredator, nPrey, nSteps, params)
 
-        val windows = problem.observedTrajectory
-            .drop(1)
-            .windowed(WINDOW_LEN, WINDOW_LEN, true) { window ->
-                window.map { obs -> obs.observation }
-            }
+        val windows = problem
+            .realTrajectory
+            .generateObservations(pObserve)
+            .windowed(WINDOW_LEN, WINDOW_LEN, true)
 
         for(i in 0 until windows.size) {
             val window = windows[i]
-            println("Adding window $window")
+            println("Adding window $i of ${windows.size-1}")
             problem.solver.addObservations(window)
             problem.solver.minimalSolve()
             problem.solver.removeDeadAgents(5)
-            File("problemOnline${i}.dump").writeObject(problem)
+            File("problemOnline${i}.dump").writeObject(problem.solver)
         }
+
+        println("log prob of real trajectory = ${problem.realTrajectory.logProb()}")
+        println("log prob of MAP trajectory = ${problem.solver.trajectory.logProb()}")
     }
 
 
@@ -49,25 +50,20 @@ class OnlineMAP {
         val params = StandardParams
         val problem = File("problemOnline0.dump").readObject<PredPreyProblem>()
         // compare states
-        val unobservedPosterior = problem.observedTrajectory
-            .drop(1)
-            .map { it.observation }
+        val unobservedPosterior = problem.solver.observations
             .zip(problem.solver.trajectory)
             .map {(observation, posterior) ->
-                posterior - observation
+                posterior.consequences - observation
             }
-        val divergences = problem.observedTrajectory
-            .drop(1)
-            .map { it.realState }
+        val divergences = problem.realTrajectory.toStateTrajectory()
             .zip(unobservedPosterior)
             .map { (real, predicted) ->
                 predicted.divergence(real, params.GRIDSIZE)
             }
 
-        val refDivergences = problem.observedTrajectory
-            .drop(1)
-            .map { obs ->
-                PredPreyModel.randomState(50,params).divergence(obs.realState, params.GRIDSIZE)
+        val refDivergences = problem.realTrajectory.toStateTrajectory()
+            .map { realState ->
+                PredPreyModel.randomState(50,params).divergence(realState, params.GRIDSIZE)
             }
 
         val resultFile = File("resultsOnline.dat").writer()
@@ -81,7 +77,6 @@ class OnlineMAP {
 
 
     fun setupPredPreyProblem(
-        pObserve: Double,
         nPredator: Int,
         nPrey: Int,
         nSteps: Int,
@@ -89,32 +84,32 @@ class OnlineMAP {
     ): PredPreyProblem {
         val myModel = PredPreyModel(params)
         val startState = PredPreyModel.randomState(nPredator, nPrey, params)
-        val observations = myModel.generateObservations(startState, nSteps, pObserve)
-        return PredPreyProblem(observations, MAPOrbitSolver(myModel, startState))
+        val realTrajectory = myModel.sampleTimesteppingPath(startState, nSteps)
+        return PredPreyProblem(realTrajectory, MAPOrbitSolver(myModel, startState))
     }
 
 
-    fun solve(problem: PredPreyProblem) {
-        val WINDOW_LEN = 1
-
-        val windows = problem.observedTrajectory
-            .drop(1)
-            .windowed(WINDOW_LEN, WINDOW_LEN, true) { window ->
-                window.map { obs -> obs.observation }
-            }
-
-
-        windows.forEachIndexed { i, window ->
-            println("Adding window $window")
-            problem.solver.addObservations(window)
-            problem.solver.minimalSolve()
-            problem.solver.removeDeadAgents(5)
-            problem.saveToFile("partialProblem${i}.dump")
-        }
-    }
-
-    fun solve(dumpFile: String) {
-        val problem = File(dumpFile).readObject<PredPreyProblem>()
-        solve(problem)
-    }
+//    fun solve(problem: PredPreyProblem) {
+//        val WINDOW_LEN = 1
+//
+//        val windows = problem.observedTrajectory
+//            .drop(1)
+//            .windowed(WINDOW_LEN, WINDOW_LEN, true) { window ->
+//                window.map { obs -> obs.observation }
+//            }
+//
+//
+//        windows.forEachIndexed { i, window ->
+//            println("Adding window $window")
+//            problem.solver.addObservations(window)
+//            problem.solver.minimalSolve()
+//            problem.solver.removeDeadAgents(5)
+//            problem.saveToFile("partialProblem${i}.dump")
+//        }
+//    }
+//
+//    fun solve(dumpFile: String) {
+//        val problem = File(dumpFile).readObject<PredPreyProblem>()
+//        solve(problem)
+//    }
 }

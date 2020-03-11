@@ -36,12 +36,12 @@ class SerializationTest {
     fun loadProblem() {
         val myProblem = File("problem1.dump").readObject<PredPreyProblem>()
         println("Real trajectory is")
-        myProblem.observedTrajectory.forEach {
-            println("${it.realState}")
+        myProblem.realTrajectory.forEach {
+            println("$it")
         }
-        println("Observed trajectory is")
-        myProblem.observedTrajectory.forEach {
-            println("${it.observation}")
+        println("Observations are")
+        myProblem.solver.timesteps.forEach {
+            println("${it.observations}")
         }
         println("Solution is")
         myProblem.solver.timesteps.forEach {

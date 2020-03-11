@@ -12,14 +12,16 @@ class TestMAPOrbitSolver {
         val params = StandardParams
         val myModel = PredPreyModel(params)
         val startState = PredPreyModel.randomState(40,60, params)
-        val observations = myModel.generateObservations(startState, 6, 0.5)
+        val realTrajectory = myModel.sampleTimesteppingPath(startState, 4)
+        val realStates = realTrajectory.toStateTrajectory()
+        val observations = realTrajectory.generateObservations(0.5)
         println("Real orbit")
-        observations.forEach {println(it.realState)}
+        observations.forEach {println(realTrajectory)}
         println("Observations")
-        observations.forEach {println(it.observation)}
+        observations.forEach {println(it)}
 
         val mySolver = MAPOrbitSolver(myModel, startState)
-        observations.drop(1).forEach { mySolver.addObservation(it.observation) }
+        observations.forEach { mySolver.addObservation(it) }
         mySolver.completeSolve()
 
         println("MAP orbit is")
@@ -30,9 +32,11 @@ class TestMAPOrbitSolver {
         mySolver.timesteps.forEach { println(it.committedConsequences) }
 
         // compare states
-        observations.map { it.realState }.zip(mySolver.timesteps.map { it.committedConsequences }).forEach { (real, predicted) ->
+        realStates.zip(mySolver.timesteps.map { it.committedConsequences }).forEach { (real, predicted) ->
             println("distance = ${predicted.divergence(real, params.GRIDSIZE)}  :  ${PredPreyModel.randomState(50,params).divergence(real, params.GRIDSIZE)}")
         }
+        println("log prob of real trajectory = ${realTrajectory.logProb()}")
+        println("log prob of MAP trajectory = ${mySolver.trajectory.logProb()}")
     }
 
     @Test

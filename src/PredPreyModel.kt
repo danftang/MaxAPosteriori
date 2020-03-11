@@ -43,18 +43,18 @@ class PredPreyModel: Hamiltonian<Agent> {
 
 
     // timestepping
-    fun sampleTimesteppingPath(startState: Multiset<Agent>, nSteps: Int): List<Multiset<Agent>> {
+    fun sampleTimesteppingPath(startState: Multiset<Agent>, nSteps: Int): EventTrajectory<Agent> {
 
         // initialise path
-        val path = ArrayList<Multiset<Agent>>(nSteps)
-        path.add(startState)
+        val path = EventTrajectory<Agent>(nSteps)
+//        path.add(startState)
 
         // generate events
         var state = startState
         for(t in 1..nSteps) {
-
             val lastState = state
-            lastState.forEach {agent ->
+            val events = ModelEvent<Agent>()
+            lastState.forEach { agent ->
                 val cumulativeProb = Random.nextDouble()
                 val options = primaryRequirementIndex[agent]?:throw(IllegalStateException("No choices for agent $agent"))
                 var sum = 0.0
@@ -63,26 +63,45 @@ class PredPreyModel: Hamiltonian<Agent> {
                     sum > cumulativeProb
                 }?:options.last()
                 state = nextAct.actOn(state)
+                events.add(nextAct)
             }
-            path.add(state)
+            path.add(events)
         }
         return path
     }
 
 
-    fun generateObservations(startState: Multiset<Agent>, nSteps: Int, pObserve: Double): List<ObservedState> {
-        val observations = ArrayList<ObservedState>(nSteps)
+//    fun sampleTimesteppingEventTrajectory(startState: Multiset<Agent>, nSteps: Int): CompleteEventTrajectory<Agent> {
+//        // initialise path
+//        val trajectory = CompleteEventTrajectory<Agent>(nSteps)
+//
+//        // generate events
+//        var state = startState
+//        for(t in 1..nSteps) {
+//            val lastState = state
+//            val modelEvent = HashMultiset<Event<Agent>>()
+//            lastState.forEach {agent ->
+//                val cumulativeProb = Random.nextDouble()
+//                val options = primaryRequirementIndex[agent]?:throw(IllegalStateException("No choices for agent $agent"))
+//                var sum = 0.0
+//                val nextAct = options.find { act ->
+//                    sum += act.rateFor(lastState)
+//                    sum > cumulativeProb
+//                }?:options.last()
+//                modelEvent.add(nextAct)
+//                state = nextAct.actOn(state)
+//            }
+//            trajectory.add(modelEvent)
+//        }
+//        return trajectory
+//    }
 
-        sampleTimesteppingPath(startState, nSteps).forEach { realState ->
-            val observedState = HashMultiset<Agent>()
-            realState.forEach { agent ->
-                if(Random.nextDouble() < pObserve) {
-                    observedState.add(agent)
-                }
-            }
-            observations.add(ObservedState(realState, observedState))
-        }
-        return(observations)
+
+    fun generateObservations(startState: Multiset<Agent>, nSteps: Int, pObserve: Double): List<ObservedState> {
+        val realTrajectory = sampleTimesteppingPath(startState, nSteps)
+        val realStates = realTrajectory.toStateTrajectory()
+        val observations = realTrajectory.generateObservations(0.5)
+        return(realStates.zip(observations).map { ObservedState(it.first, it.second) })
     }
 
 

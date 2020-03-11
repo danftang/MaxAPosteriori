@@ -10,7 +10,7 @@ class ForwardSimTests {
         val nSteps = 200
         val myModel = PredPreyModel(StandardParams)
         val startState = PredPreyModel.randomState(40, 60, StandardParams)
-        val trajectory = myModel.sampleTimesteppingPath(startState, nSteps)
+        val trajectory = myModel.sampleTimesteppingPath(startState, nSteps).toStateTrajectory()
 
         PredPreyModel.plotTrajectory(trajectory, StandardParams.GRIDSIZE)
     }

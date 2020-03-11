@@ -6,13 +6,23 @@ import java.lang.IllegalStateException
 import java.util.*
 
 class MAPOrbitSolver<AGENT>: Serializable {
-    val timesteps = ArrayDeque<Timestep<AGENT>>()
-    val startState: UnknownModelState<AGENT>
+    val timesteps = ArrayList<Timestep<AGENT>>()
+    val startState: StartState<AGENT>
     val hamiltonian: Hamiltonian<AGENT>
 //    var solver: MPSolver
 
-    val trajectory: List<Multiset<AGENT>>
-        get() = timesteps.map { it.committedConsequences }
+    val trajectory: EventTrajectory<AGENT>
+        get() {
+            val result = EventTrajectory<AGENT>(timesteps.size)
+            timesteps.mapTo(result) { it.committedEvents }
+            return result
+        }
+
+
+    val observations: List<Multiset<AGENT>>
+        get() = timesteps.map { it.observations }
+
+
 
     constructor(hamiltonian: Hamiltonian<AGENT>, startState: Multiset<AGENT>) {
         this.hamiltonian = hamiltonian
@@ -21,10 +31,9 @@ class MAPOrbitSolver<AGENT>: Serializable {
 
 
     fun addObservation(observation: Multiset<AGENT>) {
-        val lastState = if(timesteps.isEmpty()) startState else timesteps.peekLast()
+        val lastState: UnknownModelState<AGENT> = if(timesteps.isEmpty()) startState else timesteps.last()
         timesteps.add(Timestep(hamiltonian, lastState, observation))
     }
-
 
 
 
@@ -46,6 +55,8 @@ class MAPOrbitSolver<AGENT>: Serializable {
         timesteps.forEach {
             it.applySolution()
         }
+        startState.endStateBinaryIndicators.clear()
+        startState.endStateIndicators.clear()
 
     }
 
@@ -61,17 +72,18 @@ class MAPOrbitSolver<AGENT>: Serializable {
 
             if (solveState == MPSolver.ResultStatus.INFEASIBLE) {
                 println("COULDN'T SOLVE. ROLLING BACK...")
-                val timestepIt = timesteps.descendingIterator()
+                val timestepIt = timesteps.asReversed().iterator()
                 var doneRollback = false
                 while(timestepIt.hasNext() && !doneRollback) {
                     doneRollback = timestepIt.next().rollback()
                 }
                 if(!doneRollback) throw(IllegalStateException("Unsolvable state"))
+                timesteps.forEach { it.clearAllIndicators() }
+            } else {
+                timesteps.forEach { it.applySolution() }
             }
-
-            timesteps.forEach {
-                it.applySolution()
-            }
+            startState.endStateBinaryIndicators.clear()
+            startState.endStateIndicators.clear()
 
         } while(solveState == MPSolver.ResultStatus.INFEASIBLE)
 
@@ -79,7 +91,7 @@ class MAPOrbitSolver<AGENT>: Serializable {
 
 
     fun removeDeadAgents(maxStepsUnseen: Int) {
-        timesteps.descendingIterator().asSequence().drop(maxStepsUnseen-1).forEach { timestep ->
+        timesteps.asReversed().asSequence().drop(maxStepsUnseen-1).forEach { timestep ->
             timestep.hangingAgents.forEach { agent ->
                 timestep.committedEvents.add(Event(setOf(agent), emptySet(), emptyMultiset(), 1.0, agent))
             }
@@ -87,13 +99,17 @@ class MAPOrbitSolver<AGENT>: Serializable {
     }
 
 
+
     private fun calculateForwardBackwardPotentialEvents() {
         timesteps.forEach { it.addForwardEvents() }
-        var forwardRequirements: Set<AGENT> = emptySet()
-        timesteps.descendingIterator().forEach { timestep ->
-            timestep.filterBackwardEvents(forwardRequirements)
+        var forwardRequirements = emptySet<AGENT>()
+        var forwardCommittedAbsences = emptySet<AGENT>()
+        timesteps.asReversed().forEach { timestep ->
+            timestep.filterBackwardEvents(forwardRequirements, forwardCommittedAbsences)
             forwardRequirements = timestep.potentialRequirementsFootprint
+            forwardCommittedAbsences = timestep.committedAbsenceFootprint
         }
     }
+
 
 }

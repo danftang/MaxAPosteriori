@@ -25,3 +25,5 @@ hs_err_pid*
 out
 lib
 offline
+src/META-INF
+*.iws
