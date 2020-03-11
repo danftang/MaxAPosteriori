@@ -1,12 +1,12 @@
 import java.io.Serializable
 
 open class Hamiltonian<AGENT>: ArrayList<Event<AGENT>>(), Serializable {
-    val requirementIndex: Map<AGENT, Set<Event<AGENT>>>          by lazy { indexBy { it.requirements } }
+    val requirementIndex: Map<AGENT, Set<Event<AGENT>>>          by lazy { indexBy { it.presenceRequirements } }
     val primaryRequirementIndex: Map<AGENT, Set<Event<AGENT>>>   by lazy { indexBy { setOf(it.primaryAgent) } }
     val consequenceIndex: Map<AGENT, Set<Event<AGENT>>>          by lazy { indexBy { it.consequences } }
-    val secondaryRequirementIdnex: Map<AGENT, Set<Event<AGENT>>> by lazy { indexBy { it.requirements.minus(it.primaryAgent) } }
+    val secondaryRequirementIdnex: Map<AGENT, Set<Event<AGENT>>> by lazy { indexBy { it.presenceRequirements.minus(it.primaryAgent) } }
     val deltaIndex: Map<AGENT, Set<Event<AGENT>>>                by lazy { indexBy {
-            it.requirements.minus(it.consequences).union(it.consequences.minus(it.requirements))
+            it.presenceRequirements.minus(it.consequences).union(it.consequences.minus(it.presenceRequirements))
         }
     }
     val allStates: Set<AGENT>
@@ -22,7 +22,7 @@ open class Hamiltonian<AGENT>: ArrayList<Event<AGENT>>(), Serializable {
     fun eventsPresenceSatisfiedBy(footprint: Set<AGENT>): List<Event<AGENT>> {
         return footprint.flatMap { agent ->
             eventsWithPrimaryRequirement(agent)
-                .filter { event -> footprint.containsAll(event.requirements) }
+                .filter { event -> footprint.containsAll(event.presenceRequirements) }
 
         }
     }

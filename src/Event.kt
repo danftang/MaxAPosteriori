@@ -4,20 +4,20 @@ import lib.toMutableMultiset
 import java.io.Serializable
 import java.lang.IllegalArgumentException
 
-class Event<AGENT>(val requirements: Set<AGENT>, val absenceRequirements: Set<AGENT>, val consequences: Multiset<AGENT>, val rate: Double, val primaryAgent: AGENT): Serializable {
+class Event<AGENT>(val presenceRequirements: Set<AGENT>, val absenceRequirements: Set<AGENT>, val consequences: Multiset<AGENT>, val rate: Double, val primaryAgent: AGENT): Serializable {
     val additions: MutableMultiset<AGENT>
-        get() = consequences - requirements
+        get() = consequences - presenceRequirements
     val secondaryRequirements: Set<AGENT>
-        get() = requirements.minus(primaryAgent)
-    val totalRequirements: Set<AGENT>
-        get() = requirements.union(absenceRequirements)
+        get() = presenceRequirements.minus(primaryAgent)
+//    val totalRequirements: Set<AGENT>
+//        get() = requirements.union(absenceRequirements)
 
 //    val deletions: Set<AGENT>
 //        get() = requirements - consequences.counts.keys
 
 
     fun delta(agent: AGENT): Int {
-        return consequences.count(agent) - (if(requirements.contains(agent)) 1 else 0)
+        return consequences.count(agent) - (if(presenceRequirements.contains(agent)) 1 else 0)
     }
 
     fun rateFor(state: Multiset<AGENT>): Double {
@@ -27,7 +27,7 @@ class Event<AGENT>(val requirements: Set<AGENT>, val absenceRequirements: Set<AG
 
     fun rateFor(state: Set<AGENT>): Double {
         absenceRequirements.forEach { if(state.contains(it)) return 0.0 }
-        if(!state.containsAll(requirements)) return 0.0
+        if(!state.containsAll(presenceRequirements)) return 0.0
         return rate
     }
 
@@ -52,7 +52,7 @@ class Event<AGENT>(val requirements: Set<AGENT>, val absenceRequirements: Set<AG
 
     fun deltas(): Map<AGENT,Int> {
         val d = HashMap<AGENT,Int>()
-        requirements.forEach {
+        presenceRequirements.forEach {
             d[it] = -1
         }
         consequences.counts.forEach {
@@ -65,7 +65,6 @@ class Event<AGENT>(val requirements: Set<AGENT>, val absenceRequirements: Set<AG
     }
 
     override fun toString(): String {
-        if(secondaryRequirements.isEmpty()) return "$primaryAgent -> ${consequences}"
-        return "$primaryAgent[${secondaryRequirements}] -> ${consequences}"
+        return "$primaryAgent${secondaryRequirements}${absenceRequirements} -> ${consequences}"
     }
 }

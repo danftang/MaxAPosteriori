@@ -36,6 +36,14 @@ class MAPOrbitSolver<AGENT>: Serializable {
     }
 
 
+    fun solutionIsCorrect(isPartial: Boolean): Boolean {
+        if(!trajectory.isFeasible(startState.committedConsequences, isPartial)) return false
+        timesteps.forEach { step ->
+            if(!step.observations.isSubsetOf(step.committedEvents.consequences)) return false
+        }
+        return true
+    }
+
 
     fun addObservations(observations: Iterable<Multiset<AGENT>>) {
         observations.forEach { addObservation(it) }

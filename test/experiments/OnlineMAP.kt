@@ -12,14 +12,15 @@ import lib.writeObject
 import org.junit.Test
 import java.io.File
 import java.io.Serializable
+import java.lang.IllegalStateException
 
 class OnlineMAP {
     @Test
     fun findAverageDivergence() {
         System.loadLibrary("jniortools")
-        val pObserve = 0.75
-        val nPredator = 20
-        val nPrey = 30
+        val pObserve = 0.5
+        val nPredator = 40
+        val nPrey = 60
         val WINDOW_LEN = 1
         val nSteps = 10
         val params = StandardParams
@@ -37,11 +38,17 @@ class OnlineMAP {
             problem.solver.addObservations(window)
             problem.solver.minimalSolve()
             problem.solver.removeDeadAgents(5)
+            if(!problem.solver.solutionIsCorrect(true)) throw(IllegalStateException("Solution is not correct"))
             File("problemOnline${i}.dump").writeObject(problem.solver)
         }
 
+        println("Completing trajectory")
+        problem.solver.completeSolve()
+        if(!problem.solver.solutionIsCorrect(false)) throw(IllegalStateException("Complete solution is not correct"))
+
         println("log prob of real trajectory = ${problem.realTrajectory.logProb()}")
         println("log prob of MAP trajectory = ${problem.solver.trajectory.logProb()}")
+
     }
 
 
@@ -85,7 +92,7 @@ class OnlineMAP {
         val myModel = PredPreyModel(params)
         val startState = PredPreyModel.randomState(nPredator, nPrey, params)
         val realTrajectory = myModel.sampleTimesteppingPath(startState, nSteps)
-        return PredPreyProblem(realTrajectory, MAPOrbitSolver(myModel, startState))
+        return PredPreyProblem(realTrajectory, MAPOrbitSolver(myModel, startState), params)
     }
 
 

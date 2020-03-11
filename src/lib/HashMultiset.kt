@@ -110,6 +110,20 @@ open class HashMultiset<T>(private val mutableCounts: HashMap<T,Int> = HashMap()
     }
 
 
+    override fun equals(other: Any?): Boolean {
+        if(this === other) return true
+        if(other is Multiset<*>) {
+            return this.counts == other.counts
+        }
+        if(other is Set<*>) {
+            if(!this.counts.filter { it.value != 1 }.isEmpty()) return false
+            return this.supportSet == other
+        }
+        return false
+    }
+
+
+
 
     class MultiMutableIterator<A>(val mapIterator : MutableIterator<MutableMap.MutableEntry<A,Int>>, val decrementSize : ()->Unit) : MutableIterator<A> {
         private var currentEntry : MutableMap.MutableEntry<A,Int>? = null

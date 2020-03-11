@@ -24,7 +24,7 @@ class Timestep<AGENT>: UnknownModelState<AGENT>, Serializable {
         get() = potentialEvents.asSequence().flatMap { it.consequences.supportSet.asSequence() }.toSet()
 
     val potentialRequirementsFootprint: Set<AGENT>
-        get() = potentialEvents.asSequence().flatMap { it.requirements.asSequence() }.toSet()
+        get() = potentialEvents.asSequence().flatMap { it.presenceRequirements.asSequence() }.toSet()
 
     val committedAbsenceFootprint: Set<AGENT>
         get() = committedEvents.asSequence().flatMap { it.absenceRequirements.asSequence() }.toSet()
@@ -46,10 +46,10 @@ class Timestep<AGENT>: UnknownModelState<AGENT>, Serializable {
 
 
     fun addForwardEvents() {
-        val potentialConsequences = previousState.potentialConsequencesFootprint
+        val previousPotentialConsequences = previousState.potentialConsequencesFootprint
         val previousCommittedFootprint = previousState.committedConsequences.supportSet
-        val potentialPrimaryAgents = potentialConsequences + hangingAgents.supportSet
-        val potentialPresentAgents = potentialConsequences + previousCommittedFootprint
+        val potentialPrimaryAgents = previousPotentialConsequences + hangingAgents.supportSet
+        val potentialPresentAgents = previousPotentialConsequences + previousCommittedFootprint
 
         potentialEvents = hamiltonian
             .eventsPresenceSatisfiedBy(potentialPresentAgents)

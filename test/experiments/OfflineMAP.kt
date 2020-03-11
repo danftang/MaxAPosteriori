@@ -15,7 +15,7 @@ import java.io.File
 class OfflineMAP {
     @Test
     fun doOfflineSolve() {
-        val nSamples = 4
+        val nSamples = 2
         val nSteps = 4
         val pObserve = 0.5
         val nPred = 40
@@ -27,6 +27,7 @@ class OfflineMAP {
             val params = StandardParams
             val problem = setupPredPreyProblem(pObserve, nPred, nPrey, nSteps, params)
             problem.solver.completeSolve()
+            if(!problem.solver.solutionIsCorrect(false)) throw(IllegalStateException("Solution is not correct!"))
             File("problem${nSteps}.${i}.dump").writeObject(problem)
         }
     }
@@ -44,7 +45,7 @@ class OfflineMAP {
         val trajectory = myModel.sampleTimesteppingPath(startState, nSteps)
         val solver = MAPOrbitSolver(myModel, startState)
         solver.addObservations(trajectory.generateObservations(pObserve))
-        return PredPreyProblem(trajectory, solver)
+        return PredPreyProblem(trajectory, solver, params)
     }
 
 
@@ -94,6 +95,30 @@ class OfflineMAP {
             print(field)
         }
         resultFile.close()
+    }
+
+    @Test
+    fun plotFinalStateComparison() {
+        val nSteps = 4
+        val problem = File("problem${nSteps}.1.dump").readObject<PredPreyProblem>()
+        val realFinalState = problem.realTrajectory.last().consequences
+        val mapFinalState = problem.solver.trajectory.last().consequences
+        realFinalState.comparisonPlot(mapFinalState, problem.params.GRIDSIZE)
+
+        // compare states
+        val unobservedPosterior = problem.solver.observations
+            .zip(problem.solver.trajectory)
+            .map {(observation, posterior) ->
+                posterior.consequences - observation
+            }
+
+        val unobservedRealState = problem.solver.observations
+            .zip(problem.realTrajectory)
+            .map {(observation, realEvents) ->
+                realEvents.consequences - observation
+            }
+
+        unobservedRealState.last().comparisonPlot(unobservedPosterior.last(), problem.params.GRIDSIZE)
     }
 
 }

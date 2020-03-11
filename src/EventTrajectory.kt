@@ -30,4 +30,14 @@ class EventTrajectory<AGENT>: Serializable, ArrayList<ModelEvent<AGENT>> {
 
 
     fun logProb() = sumByDouble { it.logProb() }
+
+
+    fun isFeasible(startState: Multiset<AGENT>, isPartial: Boolean): Boolean {
+        var state = startState
+        this.forEach { modelEvent ->
+            if(!modelEvent.isSatisfiedBy(state, isPartial)) return false
+            state = modelEvent.consequences
+        }
+        return true
+    }
 }
