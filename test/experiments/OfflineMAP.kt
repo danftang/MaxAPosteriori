@@ -11,25 +11,30 @@ import lib.readObject
 import lib.writeObject
 import org.junit.Test
 import java.io.File
+import kotlin.system.measureTimeMillis
 
 class OfflineMAP {
     @Test
     fun doOfflineSolve() {
-        val nSamples = 2
-        val nSteps = 4
-        val pObserve = 0.5
+        val samples = 1..16
+        val nSteps = 7
+        val pObserve = 2.0/3.0
         val nPred = 40
         val nPrey = 60
         System.loadLibrary("jniortools")
 
-        for(i in 1..nSamples) {
+        var totalTime = 0.0
+        for(i in samples) {
             println("Starting sample $i")
             val params = StandardParams
             val problem = setupPredPreyProblem(pObserve, nPred, nPrey, nSteps, params)
-            problem.solver.completeSolve()
+            val time = measureTimeMillis {  problem.solver.completeSolve() }/1000.0
+            totalTime += time
+            println("time to solve ${time}s")
             if(!problem.solver.solutionIsCorrect(false)) throw(IllegalStateException("Solution is not correct!"))
             File("problem${nSteps}.${i}.dump").writeObject(problem)
         }
+        println("Average solve time = ${totalTime/samples.count()}")
     }
 
 

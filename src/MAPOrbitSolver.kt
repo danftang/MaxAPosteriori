@@ -4,6 +4,8 @@ import lib.emptyMultiset
 import java.io.*
 import java.lang.IllegalStateException
 import java.util.*
+import kotlin.system.measureTimeMillis
+import kotlin.time.measureTime
 
 class MAPOrbitSolver<AGENT>: Serializable {
     val timesteps = ArrayList<Timestep<AGENT>>()
@@ -57,8 +59,8 @@ class MAPOrbitSolver<AGENT>: Serializable {
 
         timesteps.forEach { it.setupProblem(solver, true) }
         println("solving for ${solver.numVariables()} variables and ${solver.numConstraints()} constraints")
-        val solveState = solver.solve()
-        println("solveState = $solveState")
+            val solveState = solver.solve()
+            println("solveState = $solveState")
 
         timesteps.forEach {
             it.applySolution()
