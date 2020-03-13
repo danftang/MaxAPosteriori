@@ -18,14 +18,15 @@
 \usepackage{apacite}
 
 \title{Finding the maximum-a-posteriori expressed behaviour of agents in an agent-based model\\
-*** UNFINISHED DRAFT ***}
+*** UNFINISHED DRAFT ***\\
+}
 
 %\date{September 9, 1985}	% Here you can change the date presented in the paper title
 %\date{} 					% Or removing it
 
 \author{
   Daniel Tang\\
-  Leeds Institute for Data Analytics\\
+  Leeds Institute for Data Analytics\thanks{This project has received funding from the European Research Council (ERC) under the European Union’s Horizon 2020 research and innovation programme (grant agreement No. 757455)}\\
   University of Leeds\\
   Leeds, UK\\
   \texttt{D.Tang@leeds.ac.uk} \\
@@ -35,6 +36,7 @@
   %% Affiliation \\
   %% Address \\
 }
+
 
 \begin{document}
 \maketitle
@@ -260,6 +262,7 @@ The algorithm described above assumes that the observations span a finite time w
 We begin by defining the idea of a \textit{partial event trajectory} which is like a normal event trajectory except that instead of each agent having to perform exactly one action per timestep, they can perform at most one action per timestep. So, in the definition of satisfaction, in place of equation \ref{agency} we have
 \begin{equation}
 \sum_{(\Phi|\psi,R,\bar{R})\in E_i}\{\psi\} \subseteq \Psi(E_{i-1})
+\label{partial}
 \end{equation}
 Intuitively, a partial event trajectory can be interpreted as saying that at least these events happened in these timesteps, but other additional events may have happened concomitantly.
 
@@ -286,6 +289,8 @@ Since observations are fully satisfied by a partial trajectory, the observation 
 Even though partial trajectories reduce the probability of us being led down the garden path, they do not eradicate it completely. So, if we end up with observations that are incompatible with our commitments, we rollback the commitments, one timestep at a time, from the most recent until a solution becomes possible. In the worst case, we'll have to roll-back all the way to $t=0$, but in practice the probability of this will be very small for most models.
 
 One final issue with online assimilation is dying agents (or agents that leave the model for some other reason). When an agent dies it will not be observed again, but the online assimilation will just leave it in the hanging state on the off-chance that it's still around but has evaded observation. At some point we are likely to want to commit to saying that the agent has died. To do this we can estimate the probability of the agent evading observation for so long, and when this estimate falls below a certain level, we commit to it's death.
+
+If required, a partial event trajectory can be extended into a complete trajectory by requiring that equation \ref{partial} is satisfied with equality and solving the resulting set of equations.
 
 \section{Experiments with a spatial predator-prey model}
 %########################################################
@@ -316,26 +321,56 @@ Predator & die  &      0.05\\
 
 
 
-A forward simulation of the ABM was performed in order to create observation data and boundary conditions. The boundary conditions consisted of a fully observed initial state while in subsequent timesteps each agent was observed with a probability 0.5.
+Forward simulations of the ABM were performed in order to create synthetic observation data. The initial state of a simulation consisted of 40 predators and 60 prey placed randomly on the grid with uniform probability. The boundary conditions for the MAP analyses consisted of a fully observed initial state. Observations were made at each timestep and each agent was observed with a probability $\frac{2}{3}$ in each timestep.
 
 \subsection{Offline MAP experiment}
 
-Using the boundary conditions and observations for five timesteps, we set up an integer linear programming problem as specified above and used the Google's OR-Tools\cite{googleortools} to solve the problem and find the maximum-a-posteriori trajectory. A capture of a typical configuration of the real state and the MAP at the end of the five timesteps is shown in figure ... Figure ... shows the average over xxx simulations of the Manhattan distance between the unobserved agents in the MAP and the nearest agent of the same type in the real state. For comparison, we also show the average distance for a model that places the agents randomly with uniform probability.
+Using the above boundary conditions and observations and using a window length of seven timesteps, we set up an integer linear programming problem as specified above and used Google's OR-Tools\cite{googleortools} library to find the maximum-a-posteriori event trajectory. In total 16 simulations were analysed, the mean time taken per simulation to compute the MAP using a single core of a 1.6GHz Intel i5-8250U was 156s.
+
+A comparison between typical real and MAP model states at the end of an assimilation window is shown in figure \ref{snapshot}. As a rough measure of the difference between the MAP and the ``real'' state, Figure \ref{distance} shows the average shortest $L_1$ distance between the unobserved agents in the MAP and the nearest agent of the same type in the real state for each timestep in the window. For comparison, we also show the average distance for a model that places the agents randomly with uniform probability.
+
+\begin{figure}
+\begin{center}
+\includegraphics[width = 12cm]{snapshot7steps.pdf}
+\end{center}
+\caption{Snapshot comparing the real and MAP states at the end of a 7-step assimilation window. Blue symbols indicate the spatial position of predators, red symols indicate prey. Squares show the position of agents in the real state, while triangles show agents in the MAP state.}
+\label{snapshot}
+\end{figure}
+
+\begin{figure}
+\begin{center}
+\includegraphics[width = 12cm]{distances2.pdf}
+\end{center}
+\caption{The average shortest $L_1$ distance from an unobserved agent in a MAP state to an unobserved agent of the same type in the corresponding real state, plotted against number of timesteps from the start of the window. For comparison, we also show the shortest distance for the trajectories produced by the online algorithm, and the shortest distance for a randomly placed agent.}
+\label{distance}
+\end{figure}
 
 \subsection{Online assimilation experiment}
 
-The online algorithm was applied to the same observations and boundary conditions as the offline experiment. The window size for each increment was one timestep. Figure xxx shows the difference between the log probability of the MAP and the log probability of the online assimilation.
+The online algorithm was applied to the same set of observations and boundary conditions as the offline experiments. A window size of one timestep was used and agents were never presumed dead. Once the partial event trajectory for a whole simulation was found, the trajectory was completed by solving one more time for the hanging agents. The mean time per simulation to compute the event trajectory, using the same computer as used for the offline experiments, was 11.4s, representing a speed increase of just under 14 times compared to the offline algorithm.
 
+In order to compare the quality of the online algorithm with that of the MAP, we calculated the ensemble average ratios of the posterior probabilities
 
+\[
+\overline{\ln\left(\frac{P(\mathcal{E}_{MAP}|\mathcal{O})}{P(\mathcal{E}_{real}|\mathcal{O})}\right)} = 66.7
+\]
+
+\[
+\overline{\ln\left(\frac{P(\mathcal{E}_{online}|\mathcal{O})}{P(\mathcal{E}_{real}|\mathcal{O})}\right)} = 44.1
+\]
+
+where $\mathcal{O}$ are the observations, $\mathcal{E}_{MAP}$ is the MAP event trajectory, $\mathcal{E}_{online}$ is the trajectory given by the online algorithm and $\mathcal{E}_{real}$ is the trajectory used to create the observations. As can be seen, the online trajectory is less probable than the MAP trajectory, but both are substantially more probable than the real trajectory that was used to create the observations in the first place.
+
+Figure \ref{distance} shows the average shortest $L_1$ distances between agents in the the online trajectory and those in the real trajectory, alongside those of the MAP trajectory.
 
 \section{Conclusion}
 %###################
 
 We have demonstrated that the maximum-a-posteriori trajectory of an agent-based, spatial predator-prey model can be found given a set of partial, noisy observations. We have also shown how to construct a feasible interpretation of a stream of such observations of arbitrary length.
 
-Since integer linear programming problems are, in full generality, NP-complete, the technique described here will not scale to very large models but will work best when agents choose from one of a limited number of options at each timestep, when interactions are sparse and when the observations impose strong constraints on the state. However, expressing the problem in this form lays the foundations for further research to apply approximations that may lead to more scalable algorithms.
+Since integer linear programming problems are, in full generality, NP-complete, the technique described here will not in full generality scale to very large models but will work best when agents choose from one of a limited number of options at each timestep, when interactions are sparse and when the observations impose strong constraints on the state. However, expressing the problem in this form lays the foundations for further research to apply approximations that may lead to more scalable algorithms.
 
-Finding the MAP trajectory can be useful for a number of reasons. If we're forced to commit to a specific trajectory, given some observations, the MAP is our best bet. However, it is the most probable trajectory (perhaps among others with the same probability) among a very large number of other less probable trajectories. So usually it is very unlikely that the MAP is what really happened and we certainly shouldn't, in general, use the MAP as an interpretation of what actually happened. However, the MAP trajectory can be useful in other ways; for example, it is often a good initial condition to start an MCMC sampling algorithm, or showing the non-existence of a MAP can show that there must be either a false observation or some process has occurred that is not captured in the model.
+%Finding the MAP trajectory can be useful for a number of reasons. If we're forced to commit to a specific trajectory, given some observations, the MAP is our best bet. However, it is the most probable trajectory (perhaps among others with the same probability) among a very large number of other less probable trajectories. So usually it is very unlikely that the MAP is what really happened and we certainly shouldn't, in general, use the MAP as an interpretation of what actually happened. However, the MAP trajectory can be useful in other ways; for example, it is often a good initial condition to start an MCMC sampling algorithm, or showing the non-existence of a MAP can show that there must be either a false observation or some process has occurred that is not captured in the model.
 
 
 

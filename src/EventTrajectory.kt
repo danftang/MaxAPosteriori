@@ -13,6 +13,10 @@ class EventTrajectory<AGENT>: Serializable, ArrayList<ModelEvent<AGENT>> {
         return this.map { it.consequences() }
     }
 
+    fun impliedStartState(): Multiset<AGENT> {
+        return this.first().primaryRequirements()
+    }
+
 
 //    fun initialPrimaryRequirements(): Multiset<AGENT> {
 //        if(size == 0) return emptyMultiset()
@@ -40,4 +44,9 @@ class EventTrajectory<AGENT>: Serializable, ArrayList<ModelEvent<AGENT>> {
         }
         return true
     }
+
+    companion object {
+        private const val serialVersionUID: Long = -7218603259279138400
+    }
+
 }

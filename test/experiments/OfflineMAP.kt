@@ -5,15 +5,14 @@ import Params
 import PredPreyModel
 import PredPreyProblem
 import StandardParams
-import lib.comparisonPlot
-import lib.divergence
-import lib.readObject
-import lib.writeObject
+import lib.*
 import org.junit.Test
 import java.io.File
 import kotlin.system.measureTimeMillis
 
 class OfflineMAP {
+    val directory = "experiments/pObs0.66"
+
     @Test
     fun doOfflineSolve() {
         val samples = 1..16
@@ -27,8 +26,9 @@ class OfflineMAP {
         for(i in samples) {
             println("Starting sample $i")
             val params = StandardParams
-            val problem = setupPredPreyProblem(pObserve, nPred, nPrey, nSteps, params)
-            val time = measureTimeMillis {  problem.solver.completeSolve() }/1000.0
+            val problem = PredPreyProblem(nPred, nPrey, nSteps, params)
+            val observations = problem.realTrajectory.generateObservations(pObserve)
+            val time = measureTimeMillis {  problem.offlineSolve(observations) }/1000.0
             totalTime += time
             println("time to solve ${time}s")
             if(!problem.solver.solutionIsCorrect(false)) throw(IllegalStateException("Solution is not correct!"))
@@ -38,74 +38,51 @@ class OfflineMAP {
     }
 
 
-    fun setupPredPreyProblem(
-        pObserve: Double,
-        nPredator: Int,
-        nPrey: Int,
-        nSteps: Int,
-        params: Params
-    ): PredPreyProblem {
-        val myModel = PredPreyModel(params)
-        val startState = PredPreyModel.randomState(nPredator, nPrey, params)
-        val trajectory = myModel.sampleTimesteppingPath(startState, nSteps)
-        val solver = MAPOrbitSolver(myModel, startState)
-        solver.addObservations(trajectory.generateObservations(pObserve))
-        return PredPreyProblem(trajectory, solver, params)
-    }
-
-
     @Test
-    fun loadDumpedSolutions() {
-        val nSamples = 4
-        val nSteps = 4
+    fun calcDivergences() {
+        val samples = 1..16
+        val nSteps = 7
         val divergenceMeans = DoubleArray(nSteps) { 0.0 }
         val refMeans = DoubleArray(nSteps) { 0.0 }
+        val nSamples = samples.count()
 
         // generate observation path
-        for(i in 1..nSamples) {
+        for(i in samples) {
             println("Loading sample $i")
             val params = StandardParams
-            val problem = File("problem${nSteps}.${i}.dump").readObject<PredPreyProblem>()
+            val problem = File("${directory}/problem${nSteps}.${i}.dump").readObject<PredPreyProblem>()
 
-            // compare states
-            val unobservedPosterior = problem.solver.observations
-                .zip(problem.solver.trajectory)
-                .map {(observation, posterior) ->
-                    posterior.consequences - observation
-                }
-            val divergences = problem.realTrajectory.toStateTrajectory()
-                .zip(unobservedPosterior)
-                .map { (real, predicted) ->
-                    predicted.divergence(real, params.GRIDSIZE)
-                }
-
-            val refDivergences = problem.realTrajectory.toStateTrajectory()
-                .map { realState ->
-                    PredPreyModel.randomState(50,params).divergence(realState, params.GRIDSIZE)
-                }
+            val (divergences, refDivergences) = problem.calcDivergences()
 
             for(i in 0 until nSteps) {
                 divergenceMeans[i] += divergences[i]/nSamples
                 refMeans[i] += refDivergences[i]/nSamples
             }
-
-            println("log prob of real trajetory = ${problem.realTrajectory.logProb()}")
-            println("log prob of MAP trajetory = ${problem.solver.trajectory.logProb()}")
         }
-        println()
-        val resultFile = File("results.dat").writer()
+//        val resultFile = File("divergences.dat").writer()
         for(t in 0 until nSteps) {
             val field = "$t ${divergenceMeans[t]} ${refMeans[t]}\n"
-            resultFile.write(field)
+//            resultFile.write(field)
             print(field)
         }
-        resultFile.close()
+//        resultFile.close()
+        gnuplot {
+            val plotdata = heredoc((0 until nSteps).asSequence().map {
+                Triple(it+1.0, divergenceMeans[it], refMeans[it])
+            }, -1)
+            invoke("""
+                set boxwidth 0.3
+                set style fill solid
+                plot [][0:7] $plotdata using 1:2 with boxes title "Average distance of MAP"
+                replot $plotdata using ($1+0.3):3 with boxes title "Average distance of random point"
+            """)
+        }
     }
 
     @Test
     fun plotFinalStateComparison() {
-        val nSteps = 4
-        val problem = File("problem${nSteps}.1.dump").readObject<PredPreyProblem>()
+        val nSteps = 7
+        val problem = File("experiments/pObs0.66/problem${nSteps}.1.dump").readObject<PredPreyProblem>()
         val realFinalState = problem.realTrajectory.last().consequences
         val mapFinalState = problem.solver.trajectory.last().consequences
         realFinalState.comparisonPlot(mapFinalState, problem.params.GRIDSIZE)
@@ -124,6 +101,21 @@ class OfflineMAP {
             }
 
         unobservedRealState.last().comparisonPlot(unobservedPosterior.last(), problem.params.GRIDSIZE)
+    }
+
+    @Test
+    fun calcLogProbs() {
+        val nSamples = 16
+        val nSteps = 7
+        val directory = "experiments/pObs0.66"
+
+        // generate observation path
+        for(i in 1..nSamples) {
+            val problem = File("${directory}/problem${nSteps}.${i}.dump").readObject<PredPreyProblem>()
+            val realLogProb = problem.realTrajectory.logProb()
+            val mapLogProb = problem.solver.trajectory.logProb()
+            println("$realLogProb $mapLogProb ${mapLogProb-realLogProb}")
+        }
     }
 
 }
