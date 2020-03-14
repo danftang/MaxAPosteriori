@@ -1,4 +1,8 @@
 import com.google.ortools.linearsolver.MPSolver
+import com.google.ortools.sat.CpModel
+import com.google.ortools.sat.CpSolver
+import com.google.ortools.sat.CpSolverSolutionCallback
+import com.google.ortools.sat.LinearExpr
 import org.junit.Test
 
 class TestMPSolver {
@@ -33,9 +37,32 @@ class TestMPSolver {
         println("y = ${y.solutionValue()}")
         println("objective = ${obj.value()}")
 
+
 //        val solver2 = MPSolver("MySolver", MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING)
 //        println("solving for ${solver2.numVariables()} variables and ${solver2.numConstraints()} constraints")
 
+    }
+
+    @Test
+    fun testCPSolve() {
+        System.loadLibrary("jniortools")
+        val solver = CpSolver()
+        val model = CpModel()
+        val x = model.newIntVar(0, 10, "TestVar1")
+        val y = model.newIntVar(0, 10, "TestVar2")
+        model.addGreaterOrEqual(LinearExpr.sum(arrayOf(x,y)), 15)
+        model.addHint(x, 9)
+        model.addHint(y, 9)
+//        val resultState = solver.solve(model)
+//        println("x = ${solver.value(x)} y = ${solver.value(y)}")
+//        println("status = $resultState")
+
+        val callback = object: CpSolverSolutionCallback() {
+            override fun onSolutionCallback() {
+                println("x = ${value(x)} y = ${value(y)}")
+            }
+        }
+        solver.searchAllSolutions(model, callback)
     }
 
 }
