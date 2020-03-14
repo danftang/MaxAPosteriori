@@ -17,9 +17,7 @@
 \usepackage{subfig}
 \usepackage{apacite}
 
-\title{Finding the maximum-a-posteriori expressed behaviour of agents in an agent-based model\\
-*** UNFINISHED DRAFT ***\\
-}
+\title{Finding the maximum-a-posteriori expressed behaviour of agents in an agent-based model}
 
 %\date{September 9, 1985}	% Here you can change the date presented in the paper title
 %\date{} 					% Or removing it
@@ -52,19 +50,19 @@ We demonstrate both algorithms on a spatial predator-prey model on a 32x32 grid 
 \end{abstract}
 
 % keywords can be removed
-\keywords{Data assimilation, Agent based model, Quantum field theory, Probabilistic programming}
+\keywords{Data assimilation, Bayesian inference, Agent based model, Integer linear programming, predator prey model}
 
 \section{Introduction}
 %##########################################
 
-Intuitively, the problem we'll consider here is as follows: there is a complex-system of interest which we believe can be well modelled by an agent based model. We have some prior beliefs about the boundary conditions of the system and have made some observations over some period of time. However, the observations are incomplete (in that they do not specify the full state of the model at any time) and possibly noisy. The problem is to find the maximum-a-posteriori (MAP) behaviour expressed by each agent given the observations. The expressed behaviours should consist of a feasible set of agent actions or \textit{events} that lead up to, or \textit{explain}, the observations.
+Intuitively, the problem we'll consider here is as follows: there is a dynamical system of interest which we believe can be well modelled by an agent based model. We have some prior beliefs about the boundary conditions of the system and have made some observations over some period of time. However, the observations are incomplete (in that they do not specify the full state of the model at any time) and possibly noisy. The problem is to find the maximum-a-posteriori (MAP) behaviours expressed by the agents given the observations. The expressed behaviours should consist of a feasible set of agent actions or \textit{events} that could have given rise to the observations.
 
 Before presenting an algorithm to solve this problem, we'll first define the problem a bit more precisely.
 
 \subsection{What is an agent-based model?}
 %#########################################
 
-We take the essential property of an agent-based model to be that the dynamics of the model can be described entirely in terms of agent behaviours (if the environment contains objects, these are also modelled as agents). Each agent may have an internal state and the state of the whole model at any instant can be completely specified by the states of all the agents.
+We take the essential property of an agent-based model to be that the dynamics of the model can be described entirely in terms of agent behaviours (if the environment contains objects, these should also be modelled as agents). Each agent may have an internal state and the state of the whole model at any instant can be completely specified by the states of all the agents.
 
 Within this broad definition, there are a number of sub-categorizations
 \begin{itemize}
@@ -79,20 +77,20 @@ Within this broad definition, there are a number of sub-categorizations
 
 \end{itemize}
 
-We define the behaviour of an agent as a computer program which describes a timestep of the agent. The program may
+We define the behaviour of an agent as a computer program which describes a timestep of the agent. In addition to the usual programming constructs, the program may:
 \begin{itemize}
-\item query its own state at time $t$
-\item query whether there exist any agents in the model at time $t$ that satisfy any given predicate on their state
+\item query the state of the acting agent at time $t$
+\item query whether there exist any other agents in the model at time $t$ that satisfy any given predicate on their state
 \item create a new agent in any state
-\item remove itself from the model
-\item modify its own state
+\item remove the acting agent from the model
+\item modify the state of the acting agent
 \item call a function that returns a random number.
 \end{itemize}
 A timestep of the whole model consists of the execution of the timestepping program for each agent.
 
 Such a program defines a conditional probability distribution over a set of events \cite{staton2016semantics}. Each event represents an agent performing an action that expresses a specific behaviour, which we will write as $(\Phi|\psi,R,\bar{R})$ where $\psi$ is the internal state of the agent before the behaviour is expressed, $R$ is the set of other agents (states) that must be present for the behaviour to be expressed, $\bar{R}$ is the set of agents that must be absent for the behaviour to be expressed and $\Phi$ is the multiset of agents that are the result of the action occurring (including the final state of the acting agent). So, if we say an agent has a behaviour $P(\Phi|\psi,R,\bar{R})$ then when it is in state $\psi$ in an environment containing all agents in $R$ and no agents in $\bar{R}$, it performs an action that results in $\Phi$ with probability $P(\Phi|\psi,R,\bar{R})$.
 
-So, for example, an agent in state $\psi$ at time $t$ with behaviour $P(\{\psi'\}|\psi,\emptyset,\emptyset) = 1.0$ will, with certainty, change its state to $\psi'$ at time $t+1$ . An agent with behaviour $P(\emptyset|\psi,\{\phi\},\emptyset) = 0.5$ in state $\psi$ in the presence of another agent in state $\phi$ will disappear with probability $0.5$.
+So, for example, if an agent in state $\psi$ at time $t$ has a behaviour $P(\{\psi'\}|\psi,\emptyset,\emptyset) = 1.0$ it will, with certainty, change its state to $\psi'$ at time $t+1$ . An agent with behaviour $P(\emptyset|\psi,\{\phi\},\emptyset) = 0.5$ in state $\psi$ in the presence of another agent in state $\phi$ will disappear with probability $0.5$.
 
 Without loss of generality, we assume that all agents in the model have the same behaviour. If necessary, multiple types of agent can be modelled by making the agent's type part of its state.
 
@@ -101,25 +99,31 @@ In any timestep of the model a multiset of events will occur, we will call such 
 \Psi(E) = \sum_{(\Phi|\psi,R,\bar{R})\in E}\Phi
 \label{psie}
 \end{equation}
+where a sum over multisets is defined in the obvious way. We define an event trajectory, $\mathcal{E}$, as a list of model events $\left<E_1...E_n\right>$, which can be thought of as the assertion that, for each $i$, the events in $E_i$ occurred in timestep from $t=i-1$ to $t=i$. Not all event trajectories are feasible as, for each agent event, the presence and absence conditions of the event must be met.
 
-We define an event trajectory as a list of model events $\left<E_1...E_n\right>$, which can be thought of as the assertion that, for each $i$, the events in $E_i$ occurred in timestep from $t=i-1$ to $t=i$. Not all event trajectories are feasible as, for each agent event, the presence and absence conditions of the event must be met.
+Given an event trajectory, $\mathcal{E} = \left<E_1...E_n\right>$, and a \textit{seed agent},  $\psi_\emptyset$, let
+\[
+\Psi_i =
+\begin{cases}
+ \{\psi_\emptyset\} & \text{if }i=0\\
+ \Psi(E_i) & \text{otherwise}\\
+\end{cases}
+\]
+and let $\mathcal{E}$ be \textit{feasible} if and only if $\forall i\in 1...n:$
 
-Let an event trajectory, $\left<E_1...E_n\right>$ is feasible if and only if $\forall i\in 2...n:$
-
-Each agent in $\Psi$ must perform exactly one action per timestep\footnote{where $\{\psi\}$ is a multiset and the sum of multisets is defined in the obvious way}
+Each agent must perform exactly one action per timestep
 \begin{equation}
-\sum_{(\Phi|\psi,R,\bar{R})\in E_i}\{\psi\} = \Psi(E_{i-1})
+\sum_{(\Phi|\psi,R,\bar{R})\in E_i}\{\psi\} = \Psi_{i-1}
 \label{agency}
 \end{equation}
 ...each event's presence-requirements must be fulfilled
 \[
-\bigcup_{(\Phi|\psi,R,\bar{R})\in E_i} R \subseteq \Psi(E_{i-1})
+\bigcup_{(\Phi|\psi,R,\bar{R})\in E_i} R \subseteq \Psi_{i-1}
 \]
 ...and each event's absence-requirements must be fulfilled
 \[
-\left(\bigcup_{(\Phi|\psi,R,\bar{R})\in E_i} \bar{R}\right) \cap \Psi(E_{i-1}) = \emptyset
+\left(\bigcup_{(\Phi|\psi,R,\bar{R})\in E_i} \bar{R}\right) \cap \Psi_{i-1} = \emptyset
 \]
-
 
 The probability of a feasible model event is given by
 \[
@@ -127,37 +131,33 @@ P(E) = \prod_{(\Phi|\psi,R,\bar{R}) \in E} P(\Phi|\psi,R,\bar{R})
 \]
 and the probability of an event trajectory is just the product of the probabilities of all the events
 \[
-P(\left<E_0...E_m\right>) = \prod_{i}\prod_{\epsilon\in E_i, }P(\epsilon)
+P(\left<E_0...E_m\right>) = \prod_{i}P(E_i)
 \]
 
 
 \subsection{What is an observation?}
 %###################################
 
-In this paper we will consider observations that consist of a count of the number of agents for which some predicate is true. The observation can be exact or noisy in that the real count can lie in some range. More formally $\omega = \left<L,U,B\right>$ denotes the observation that the number of agents, $N$, for which predicate $B$ is true is somewhere in the range  $L \le N \le U$. If $\Psi$ is a model state,  then we say that $\Psi$ satisfies the observation, which we write as $\Psi \vdash \omega_i$, if and only if
+In this paper we will consider observations that consist of a count of the number of agents for which some predicate is true. The observation can be exact or noisy in that the real count can lie in some range. More formally $\omega = \left<L,U,B\right>$ denotes the observation that the number of agents, $N$, for which predicate $B$ is true is somewhere in the range  $L \le N \le U$. If $E$ is a model event,  then we say that $E$ satisfies the observation, which we write as $E \vdash \omega_i$, if and only if
 \[
-L \le \left|\left\{\psi:\psi \in \Psi \wedge B(\psi)\right\}\right| \le U
+L \le \left|\left\{\psi:\psi \in \Psi(E) \wedge B(\psi)\right\}\right| \le U
 \]
-From this, we say that $\Psi$ satisfies a set of observations, $\Omega$, if it satisfies all of its members. We can extend this to model event trajectories $\mathcal{E} = \left<E_1...E_n\right>$ and say that $\mathcal{E}$ satisfies a list of sets of observations (which we'll call an observation of a trajectory), $\mathcal{O} = \left<\Omega_1...\Omega_n\right>$ if for each $i$, $\Psi(E_i)$ satisfies $\Omega_i$.
+From this, we say that $E$ satisfies a set of observations, $\Omega$, if it satisfies all of its members. We can extend this to model event trajectories $\mathcal{E} = \left<E_1...E_n\right>$ and say that $\mathcal{E}$ satisfies a list of sets of observations (which we'll call an observation of a trajectory), $\mathcal{O} = \left<\Omega_1...\Omega_n\right>$ if for each $i$, $E_i$ satisfies $\Omega_i$.
 
 This form of observation can deal with exact observations ($L=U$), observations where there may be false-positives ($U$ is the observed count and $L=0$), observations where there may be false negatives ($L$ is the observed count and $U=\infty$) or observations that have some uncertainty range ($L = N - \Delta N$ and $U = N + \Delta N$).
  
 \subsection{What is a prior belief about boundary conditions?}
 %###################################
 
-The boundary conditions on the system consist of agents entering the system at particular times. At its simplest, it is a set of agents that enter the system at time $t=0$, though they need not all enter at this time.
+The boundary conditions on the system consist of agents entering the system at particular times. At its simplest, it is a set of agents that enter the system at the first timestep and are created by the seed agent, $\psi_\emptyset$, through a behaviour $P(\Phi|\psi_\emptyset,\emptyset,\emptyset)=1.0$, where $\psi_\emptyset \notin \Phi$. More generally, it is a set of probabilities $P(\Gamma,t)$ which give the prior probability that a multiset $\Gamma$ is a subset of the agents that enter the system at time $t$.
 
-More generally, it is a set of probabilities $P(\Gamma,t)$ which give the prior probability that a multiset $\Gamma$ is a subset of the agents that enter the system at time $t$.
-
-In this paper we assume that these prior beliefs can be factorised into factors that involve single agent states. In this case the prior probabilities can be expressed as
+In this paper we assume that these prior beliefs can be split into factors that involve single agent states. In this case the prior probabilities can be expressed as
 \[
 P(\Gamma,t) = \prod_{\psi \in^{=n} \Gamma} P(\psi,n,t)
 \]
 where $\psi\in^{=n}\Gamma$ is true when $\psi$ appears in $\Gamma$ exactly $n$ times and $P(\psi,n,t)$ is the probability of at least $n$ agents in state $\psi$ being injected at time $t$. 
 
-Boundary conditions can be conveniently represented in terms of the behaviour of a set of hypothetical (though never explicitly represented) \textit{zero energy} agents $\emptyset_\psi$ which, by definition, are present before $t=0$. The behaviour of a zero energy agent has the form, $(\{\emptyset_\psi, \psi^n\}|\emptyset_\psi,\emptyset,\emptyset)$ which results in $n$ agents in the state $\psi$ being injected into the system, along with the continued existence of the injecting, zero energy agent. If we allow the behaviour of these agents to be time dependent, then any set of boundary conditions can be represented by supposing that there is a model event at time $t=0$ that consists entirely of zero energy agent events.
-
-
+This can conveniently be represented in terms of the behaviour of a set of hypothetical (though never explicitly represented computationally) \textit{zero energy} agents $\emptyset_\psi$ which, are created by the seed agent $\psi_\emptyset$. The behaviour of a zero energy agent has the form, $(\{\emptyset_\psi, \psi^n\}|\emptyset_\psi,\emptyset,\emptyset)$ which results in $n$ agents in the state $\psi$ being injected into the system, along with the continued existence of the injecting, zero energy agent. If we allow the behaviour of these agents to be time dependent (either implicitly or explicitly via an internal state), then any set of boundary conditions can be represented within the existing formalism.
 
 \section{An algorithm to find the MAP event trajectory}
 %#####################################################
@@ -205,11 +205,11 @@ Now encode the observation predicates for each event's consequences
 \begin{equation}
 B_e = |\{\psi: \psi\in\Phi \wedge B(\psi)\}|
 \end{equation}
-and encode the probability of each event
+and let the probability of each event be written
 \[
 P_e = P(\Phi|\psi,R,\bar{R})
 \]
-finally, let
+finally, let the consequences of a model event be encoded as
 \begin{equation}
 \Psi_{t\phi} = \sum_e\Phi_{e\phi}c_{te}
 \label{stateIndicator}
@@ -224,7 +224,7 @@ and define a set of boolean variables $0 \le b_{t\phi} \le 1$ which satisfy
 0 \le \Psi_{t\phi} - b_{t\phi} 
 \label{bLEconstraint}
 \end{equation}
-for some \textit{multiplicity} $M$ which can be any number larger than the expected maximum number of agents in the model at any one time.
+for some \textit{multiplicity} $M$ which can be any number larger than the maximum number of agents in any one state at any one time. This, for example, could be set to the expected maximum number of agents in the model at any one time.
 
 We can now express the problem as:
 
@@ -251,24 +251,24 @@ subject to the observations being satisfied
 \forall\phi: \sum_e\ \bar{R}_{e\phi} c_{te} + Mb_{(t-1)\phi} \le M
 \label{absenceConstraint}
 \end{equation}
-This can be seen to be in the form of a pure integer linear programming problem, which in full generality is NP complete, but for which there exists many algorithms that, in practice, are able to find solutions to reasonably large problems.
+This can be seen to be in the form of a pure integer linear programming problem, which in full generality is NP complete, but for which there exists algorithms that, in practice, are able to find solutions to problems of sizes large enough to be useful.
 
 
 \section{Online assimilation}
 %############################
 
-The algorithm described above assumes that the observations span a finite time window. If the observations span a very long window or originate from a stream which has no specific start or end, we would usually split the stream up into smaller windows and deal with the observations one window at a time. However, if we commit to the maximum-a-posteriori event trajectory of one window, and use the end state of this as the start state of the next window, we are in danger of being led down ``garden paths''; i.e. the observations lead us into believing the most probable explanation, only to later show us that a much less probable and completely incompatible explanation is in-fact the case. So, we can't commit to believing an event trajectory for one window because, in the light of the observations from the next window, the trajectory may turn out to be impossible. If this happens the assimilation must stop because there is no event trajectory that satisfies the new window's observations while being a feasible extension of the previous window's trajectory. To solve this problem, we present a second algorithm for use with streaming observations.
+The algorithm described above assumes that the observations span a finite time window. If the observations span a very long window or originate from a stream which has no specific start or end, we would usually split the stream up into smaller windows and deal with the observations one window at a time. However, if we commit to the MAP event trajectory of one window, and use the end state of this as the start state of the next window, we are in danger of being led down ``garden paths''; i.e. the observations from one window lead us into believing the most probable explanation, only for later observations to show us that a much less probable and completely incompatible explanation is in-fact the case. So, we can't commit to believing an event trajectory for one window because, in the light of the observations from the next window, the trajectory may turn out to be impossible. If this happens the assimilation must stop because there is no event trajectory that satisfies the new window's observations while being a feasible extension of the previous window's trajectory. To solve this problem, we present a second algorithm for use with longer windows and streaming observations.
 
-We begin by defining the idea of a \textit{partial event trajectory} which is like a normal event trajectory except that instead of each agent having to perform exactly one action per timestep, they can perform at most one action per timestep. So, in the definition of satisfaction, in place of equation \ref{agency} we have
+We begin by defining the idea of a \textit{partial event trajectory} which is like a normal event trajectory except that instead of each agent having to perform exactly one action per timestep, they can perform at most one action per timestep. So, in place of equation \ref{agency} we have
 \begin{equation}
 \sum_{(\Phi|\psi,R,\bar{R})\in E_i}\{\psi\} \subseteq \Psi(E_{i-1})
 \label{partial}
 \end{equation}
 Intuitively, a partial event trajectory can be interpreted as saying that at least these events happened in these timesteps, but other additional events may have happened concomitantly.
 
-In an partial trajectory, all observations are satisfied but only a subset of the agents present at any particular time will be moved forward by the next model event, so agents may be left hanging at a time in the middle of the trajectory. This is good, because it reduces the likelihood that we will be led down a garden path by delaying any commitment to the exhibited behaviour of the hanging agents until more observations are available.
+In an partial trajectory, all observations up to the end of the current window are satisfied but only a subset of the agents present at any particular time will be moved forward in time by the next model event, so agents may be left hanging at a time in the middle of the trajectory. This is good because it reduces the likelihood that we will be led down a garden path by delaying any commitment to the exhibited behaviour of the hanging agents until more observations are available.
 
-The assimilation proceeds by finding a partial trajectory for one window, then taking the next window of observations and finding the maximum-a-posteriori partial trajectory given these new observations along with the partial trajectory we've already committed to. In order to correctly move hanging agents forward in time, we need to distinguish between the events that we've already committed to and the events we're optimising over. If we let $\hat{c}_{te}$ be the number of events of type $e$ that we've committed to in timestep $t$, then equation \ref{stateIndicator} becomes
+The assimilation proceeds by finding a partial trajectory for one window, then taking the next window of observations and finding the MAP partial trajectory given these new observations along with the partial trajectory we've already committed to. In order to correctly move hanging agents forward in time, we need to distinguish between the events that we've already committed to and the events we're optimising over. If we let $\hat{c}_{te}$ be the number of events of type $e$ that we've committed to in timestep $t$, then equation \ref{stateIndicator} becomes
 \begin{equation}
 \Psi_{t\phi} -  \sum_e\Phi_{e\phi}c_{te} = \sum_e\Phi_{e\phi}\hat{c}_{te}
 \label{stateIndicator}
@@ -288,9 +288,9 @@ Since observations are fully satisfied by a partial trajectory, the observation 
 
 Even though partial trajectories reduce the probability of us being led down the garden path, they do not eradicate it completely. So, if we end up with observations that are incompatible with our commitments, we rollback the commitments, one timestep at a time, from the most recent until a solution becomes possible. In the worst case, we'll have to roll-back all the way to $t=0$, but in practice the probability of this will be very small for most models.
 
-One final issue with online assimilation is dying agents (or agents that leave the model for some other reason). When an agent dies it will not be observed again, but the online assimilation will just leave it in the hanging state on the off-chance that it's still around but has evaded observation. At some point we are likely to want to commit to saying that the agent has died. To do this we can estimate the probability of the agent evading observation for so long, and when this estimate falls below a certain level, we commit to it's death.
+One final issue with online assimilation is agents that leave the model. When an agent leaves the model it will not be observed again, but the online assimilation will just leave it in the hanging state on the off-chance that it's still around but has evaded observation. At some point we are likely to want to commit to saying that the agent has left the model. To do this we can estimate the probability of the agent evading observation for so long, and when this estimate falls below a certain level, we commit to its departure.
 
-If required, a partial event trajectory can be extended into a complete trajectory by requiring that equation \ref{partial} is satisfied with equality and solving the resulting set of equations.
+If required, a partial event trajectory can be extended into a complete trajectory at any point by requiring that equation \ref{partial} is satisfied with equality and solving the resulting set of equations.
 
 \section{Experiments with a spatial predator-prey model}
 %########################################################
@@ -321,13 +321,13 @@ Predator & die  &      0.05\\
 
 
 
-Forward simulations of the ABM were performed in order to create synthetic observation data. The initial state of a simulation consisted of 40 predators and 60 prey placed randomly on the grid with uniform probability. The boundary conditions for the MAP analyses consisted of a fully observed initial state. Observations were made at each timestep and each agent was observed with a probability $\frac{2}{3}$ in each timestep.
+Forward simulations of the ABM were performed in order to create synthetic observation data. The initial state of each simulation consisted of 40 predators and 60 prey placed at random positions on the grid with uniform probability. The boundary conditions for the MAP analyses consisted of a fully observed initial state. Observations were made at each timestep and each agent was observed with a probability $\frac{2}{3}$ in each timestep.
 
 \subsection{Offline MAP experiment}
 
-Using the above boundary conditions and observations and using a window length of seven timesteps, we set up an integer linear programming problem as specified above and used Google's OR-Tools\cite{googleortools} library to find the maximum-a-posteriori event trajectory. In total 16 simulations were analysed, the mean time taken per simulation to compute the MAP using a single core of a 1.6GHz Intel i5-8250U was 156s.
+Using the above boundary conditions and observations and using a window length of seven timesteps, we set up an integer linear programming problem as specified above and used Google's OR-Tools\cite{googleortools} library to find the MAP event trajectory. In total 16 simulations were analysed, the mean time taken per simulation to compute the MAP using a single core of a 1.6GHz Intel i5-8250U was 156s.
 
-A comparison between typical real and MAP model states at the end of an assimilation window is shown in figure \ref{snapshot}. As a rough measure of the difference between the MAP and the ``real'' state, Figure \ref{distance} shows the average shortest $L_1$ distance between the unobserved agents in the MAP and the nearest agent of the same type in the real state for each timestep in the window. For comparison, we also show the average distance for a model that places the agents randomly with uniform probability.
+A comparison between typical real and MAP model states at the end of an assimilation window is shown in figure \ref{snapshot}. As a rough measure of the difference between the MAP and the ``real'' state, Figure \ref{distance} shows the average shortest $L_1$ distance between the unobserved agents in the MAP and the nearest unobserved agent of the same type in the real state for each timestep in the window. For comparison, we also show the average distance for a model that places the agents randomly with uniform probability.
 
 \begin{figure}
 \begin{center}
@@ -347,9 +347,9 @@ A comparison between typical real and MAP model states at the end of an assimila
 
 \subsection{Online assimilation experiment}
 
-The online algorithm was applied to the same set of observations and boundary conditions as the offline experiments. A window size of one timestep was used and agents were never presumed dead. Once the partial event trajectory for a whole simulation was found, the trajectory was completed by solving one more time for the hanging agents. The mean time per simulation to compute the event trajectory, using the same computer as used for the offline experiments, was 11.4s, representing a speed increase of just under 14 times compared to the offline algorithm.
+The online algorithm was applied to the same set of observations and boundary conditions as the offline experiments. A window size of one timestep was used and agents were not removed from the model if unobserved. Once the partial event trajectory for a whole simulation was found, the trajectory was completed by solving one more time for the hanging agents. The mean time per simulation to compute the event trajectory, using the same computer as used for the offline experiments, was 11.4s, representing a speed increase of just under 14 times compared to the offline algorithm.
 
-In order to compare the quality of the online algorithm with that of the MAP, we calculated the ensemble average ratios of the posterior probabilities
+In order to assess the quality of the online algorithm compared to that of the MAP, we calculated the ensemble average ratios of the posterior probabilities
 
 \[
 \overline{\ln\left(\frac{P(\mathcal{E}_{MAP}|\mathcal{O})}{P(\mathcal{E}_{real}|\mathcal{O})}\right)} = 66.7
@@ -366,14 +366,11 @@ Figure \ref{distance} shows the average shortest $L_1$ distances between agents 
 \section{Conclusion}
 %###################
 
-We have demonstrated that the maximum-a-posteriori trajectory of an agent-based, spatial predator-prey model can be found given a set of partial, noisy observations. We have also shown how to construct a feasible interpretation of a stream of such observations of arbitrary length.
+We have demonstrated that the maximum-a-posteriori trajectory of an agent-based, spatial predator-prey model can be found given a set of partial observations. We have also shown how to construct a feasible interpretation of a stream of such observations of arbitrary length.
 
-Since integer linear programming problems are, in full generality, NP-complete, the technique described here will not in full generality scale to very large models but will work best when agents choose from one of a limited number of options at each timestep, when interactions are sparse and when the observations impose strong constraints on the state. However, expressing the problem in this form lays the foundations for further research to apply approximations that may lead to more scalable algorithms.
+Since integer linear programming is NP-complete the technique described here will not in full generality scale to very large models but will work best when agents choose from one of a limited number of options at each timestep, when interactions are sparse and when the observations impose strong constraints on the state. However, expressing the problem in this form lays the foundations for further research to apply approximations that may lead to more scalable algorithms.
 
-%Finding the MAP trajectory can be useful for a number of reasons. If we're forced to commit to a specific trajectory, given some observations, the MAP is our best bet. However, it is the most probable trajectory (perhaps among others with the same probability) among a very large number of other less probable trajectories. So usually it is very unlikely that the MAP is what really happened and we certainly shouldn't, in general, use the MAP as an interpretation of what actually happened. However, the MAP trajectory can be useful in other ways; for example, it is often a good initial condition to start an MCMC sampling algorithm, or showing the non-existence of a MAP can show that there must be either a false observation or some process has occurred that is not captured in the model.
-
-
-
+Finally, it is worth noting that while the MAP event trajectory is the most probable set of events given the observations, it is also usually highly unlikely to be the true cause of the observations, for the simple fact that it is one among a very large number of other trajectories with non-trivial posterior probability. For this reason it is not usually a good idea to infer values of unobserved variables from the MAP. Rather, the MAP should be used as one component of a larger analysis. For example, the MAP trajectory is often a good choice for the start state of a Markov chain Monte Carlo sampling algorithm, which will be described in our next paper.
 
 %\bibliographystyle{unsrtnat}
 %\bibliographystyle{apalike} 
