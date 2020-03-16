@@ -44,10 +44,7 @@ class PredPreyModel: Hamiltonian<Agent> {
 
     // timestepping
     fun sampleTimesteppingPath(startState: Multiset<Agent>, nSteps: Int): EventTrajectory<Agent> {
-
-        // initialise path
         val path = EventTrajectory<Agent>(nSteps)
-//        path.add(startState)
 
         // generate events
         var state = startState
@@ -71,36 +68,10 @@ class PredPreyModel: Hamiltonian<Agent> {
     }
 
 
-//    fun sampleTimesteppingEventTrajectory(startState: Multiset<Agent>, nSteps: Int): CompleteEventTrajectory<Agent> {
-//        // initialise path
-//        val trajectory = CompleteEventTrajectory<Agent>(nSteps)
-//
-//        // generate events
-//        var state = startState
-//        for(t in 1..nSteps) {
-//            val lastState = state
-//            val modelEvent = HashMultiset<Event<Agent>>()
-//            lastState.forEach {agent ->
-//                val cumulativeProb = Random.nextDouble()
-//                val options = primaryRequirementIndex[agent]?:throw(IllegalStateException("No choices for agent $agent"))
-//                var sum = 0.0
-//                val nextAct = options.find { act ->
-//                    sum += act.rateFor(lastState)
-//                    sum > cumulativeProb
-//                }?:options.last()
-//                modelEvent.add(nextAct)
-//                state = nextAct.actOn(state)
-//            }
-//            trajectory.add(modelEvent)
-//        }
-//        return trajectory
-//    }
-
-
     fun generateObservations(startState: Multiset<Agent>, nSteps: Int, pObserve: Double): List<ObservedState> {
         val realTrajectory = sampleTimesteppingPath(startState, nSteps)
         val realStates = realTrajectory.toStateTrajectory()
-        val observations = realTrajectory.generateObservations(0.5)
+        val observations = realTrajectory.generateObservations(pObserve)
         return(realStates.zip(observations).map { ObservedState(it.first, it.second) })
     }
 
@@ -134,13 +105,6 @@ class PredPreyModel: Hamiltonian<Agent> {
             }
         }
 
-
-        fun L1divergence(from: Multiset<Agent>, to: Multiset<Agent>, gridSize: Int) {
-            var totalDistance = 0.0
-            from.forEach {agent ->
-                
-            }
-        }
 
         fun randomState(nAgents: Int, params: Params): Multiset<Agent> {
             val state = HashMultiset<Agent>()
