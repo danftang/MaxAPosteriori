@@ -17,7 +17,7 @@
 \usepackage{subfig}
 \usepackage{apacite}
 
-\title{Finding the maximum-a-posteriori expressed behaviour of agents in an agent-based model}
+\title{Finding the maximum-a-posteriori behaviour of agents in an agent-based model}
 
 %\date{September 9, 1985}	% Here you can change the date presented in the paper title
 %\date{} 					% Or removing it
@@ -40,13 +40,11 @@
 \maketitle
 
 \begin{abstract}
-In this paper we consider the problem of finding the most probable set of events that could have led to a set of partial, noisy observations of some dynamical system. In particular, we consider the case when the dynamical system is a (possibly stochastic) time-stepping agent-based model with a discrete state space, the  (possibly noisy) observations are the number of agents that have some given property and the events we're interested in are the expressed behaviours of the agents.
+In this paper we consider the problem of finding the most probable set of events that could have led to a set of partial, noisy observations of some dynamical system. In particular, we consider the case of a dynamical system that is a (possibly stochastic) time-stepping agent-based model with a discrete state space, the (possibly noisy) observations are the number of agents that have some given property and the events we're interested in are the decisions made by the agents (their ``expressed behaviours'') as the model evolves.
 
 We show that this problem can be reduced to an integer linear programming problem which can subsequently be solved numerically using a standard branch-and-cut algorithm. We describe two implementations, an ``offline'' algorithm that finds the maximum-a-posteriori expressed behaviours given a set of observations over a finite time window, and an ``online'' algorithm that incrementally builds a feasible set of behaviours from a stream of observations that may have no natural beginning or end.
 
 We demonstrate both algorithms on a spatial predator-prey model on a 32x32 grid with an initial population of 100 agents.
-
-\textbf{This is an unfinished draft which may contain errors and is subject to change.}
 \end{abstract}
 
 % keywords can be removed
@@ -55,14 +53,14 @@ We demonstrate both algorithms on a spatial predator-prey model on a 32x32 grid 
 \section{Introduction}
 %##########################################
 
-Intuitively, the problem we'll consider here is as follows: there is a dynamical system of interest which we believe can be well modelled by an agent based model. We have some prior beliefs about the boundary conditions of the system and have made some observations over some period of time. However, the observations are incomplete (in that they do not specify the full state of the model at any time) and possibly noisy. The problem is to find the maximum-a-posteriori (MAP) behaviours expressed by the agents given the observations. The expressed behaviours should consist of a feasible set of agent actions or \textit{events} that could have given rise to the observations.
+The problem we'll consider here is as follows: there is a dynamical system of interest which we believe can be well modelled by an agent based model. We have some prior beliefs about the boundary conditions of the system and have made some observations over some period of time. However, the observations are incomplete (in that they do not specify the full state of the model at any time) and possibly noisy. The problem is to find the most probable sequence of behavioural choices made by the agents (their ``expressed behaviours'') given the observations. The expressed behaviours consist of a feasible set of agent actions or \textit{events} that could have given rise to the observations.
 
 Before presenting an algorithm to solve this problem, we'll first define the problem a bit more precisely.
 
 \subsection{What is an agent-based model?}
 %#########################################
 
-We take the essential property of an agent-based model to be that the dynamics of the model can be described entirely in terms of agent behaviours (if the environment contains objects, these should also be modelled as agents). Each agent may have an internal state and the state of the whole model at any instant can be completely specified by the states of all the agents.
+We take the essential property of an agent-based model to be that the dynamics of the model can be described entirely in terms of agent behaviours (if the environment contains objects, these should also be modelled as agents). Each agent may have an internal state, and the state of the whole model at any instant can be completely specified by the states of all the agents.
 
 Within this broad definition, there are a number of sub-categorizations
 \begin{itemize}
@@ -349,7 +347,7 @@ A comparison between typical real and MAP model states at the end of an assimila
 
 The online algorithm was applied to the same set of observations and boundary conditions as the offline experiments. A window size of one timestep was used and agents were not removed from the model if unobserved. Once the partial event trajectory for a whole simulation was found, the trajectory was completed by solving one more time for the hanging agents. The mean time per simulation to compute the event trajectory, using the same computer as used for the offline experiments, was 11.4s, representing a speed increase of just under 14 times compared to the offline algorithm.
 
-In order to assess the quality of the online algorithm compared to that of the MAP, we calculated the ensemble average ratios of the posterior probabilities
+In order to assess the quality of the online algorithm compared to that of the MAP, we calculated the ensemble average log ratios of the posterior probabilities
 
 \[
 \overline{\ln\left(\frac{P(\mathcal{E}_{MAP}|\mathcal{O})}{P(\mathcal{E}_{real}|\mathcal{O})}\right)} = 66.7
@@ -359,7 +357,7 @@ In order to assess the quality of the online algorithm compared to that of the M
 \overline{\ln\left(\frac{P(\mathcal{E}_{online}|\mathcal{O})}{P(\mathcal{E}_{real}|\mathcal{O})}\right)} = 44.1
 \]
 
-where $\mathcal{O}$ are the observations, $\mathcal{E}_{MAP}$ is the MAP event trajectory, $\mathcal{E}_{online}$ is the trajectory given by the online algorithm and $\mathcal{E}_{real}$ is the trajectory used to create the observations. As can be seen, the online trajectory is less probable than the MAP trajectory, but both are substantially more probable than the real trajectory that was used to create the observations in the first place.
+where $\mathcal{O}$ are the observations, $\mathcal{E}_{MAP}$ is the MAP event trajectory, $\mathcal{E}_{online}$ is the trajectory given by the online algorithm and $\mathcal{E}_{real}$ is the trajectory used to create the observations. The MAP log ratio can be thought of as an upper bound on performance while a log ratio of around 0 would be the expected value if we sampled from the posterior. The performance of the online algorithm can be assessed in relation to these two reference points. As can be seen, the online algorithm performs less well than the MAP algorithm, but the online trajectories are, on average, substantially more probable than the real trajectory that was used to create the observations in the first place. 
 
 Figure \ref{distance} shows the average shortest $L_1$ distances between agents in the the online trajectory and those in the real trajectory, alongside those of the MAP trajectory.
 
