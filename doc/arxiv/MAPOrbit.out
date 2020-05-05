@@ -1,0 +1,12 @@
+\BOOKMARK [1][-]{section.1}{Introduction}{}% 1
+\BOOKMARK [2][-]{subsection.1.1}{What is an agent-based model?}{section.1}% 2
+\BOOKMARK [2][-]{subsection.1.2}{What is an observation?}{section.1}% 3
+\BOOKMARK [2][-]{subsection.1.3}{What is a prior belief about boundary conditions?}{section.1}% 4
+\BOOKMARK [1][-]{section.2}{An algorithm to find the MAP event trajectory}{}% 5
+\BOOKMARK [1][-]{section.3}{Online assimilation}{}% 6
+\BOOKMARK [1][-]{section.4}{Experiments with a spatial predator-prey model}{}% 7
+\BOOKMARK [2][-]{subsection.4.1}{Offline MAP experiment}{section.4}% 8
+\BOOKMARK [2][-]{subsection.4.2}{Online assimilation experiment}{section.4}% 9
+\BOOKMARK [2][-]{subsection.4.3}{Code}{section.4}% 10
+\BOOKMARK [1][-]{section.5}{Conclusion}{}% 11
+\BOOKMARK [1][-]{section*.4}{References}{}% 12

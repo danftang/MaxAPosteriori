@@ -6,4 +6,4 @@ The problem can be reduced to an integer linear programming problem which can su
 
 Example uses of both algorithms are given for a spatial predator-prey model on a 32x32 grid with an initial population of 100 agents.
 
-Please see [this paper](doc/MAPOrbitDraft.pdf) for more details of the algorithm.
+Please see [this paper](doc/MAPOrbit.pdf) for more details of the algorithm.

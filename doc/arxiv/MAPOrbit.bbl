@@ -1,0 +1,86 @@
+\begin{thebibliography}{}
+
+\bibitem [\protect \citeauthoryear {%
+Blizard%
+\ \protect \BOthers {.}}{%
+Blizard%
+\ \protect \BOthers {.}}{%
+{\protect \APACyear {1988}}%
+}]{%
+blizard1988multiset}
+\APACinsertmetastar {%
+blizard1988multiset}%
+\begin{APACrefauthors}%
+Blizard, W\BPBI D.%
+\BCBT {}\ \BOthersPeriod {.}
+\end{APACrefauthors}%
+\unskip\
+\newblock
+\APACrefYearMonthDay{1988}{}{}.
+\newblock
+{\BBOQ}\APACrefatitle {Multiset theory.} {Multiset theory.}{\BBCQ}
+\newblock
+\APACjournalVolNumPages{Notre Dame Journal of formal logic}{30}{1}{36--66}.
+\PrintBackRefs{\CurrentBib}
+
+\bibitem [\protect \citeauthoryear {%
+Google%
+}{%
+Google%
+}{%
+{\protect \APACyear {2020}}%
+}]{%
+googleortools}
+\APACinsertmetastar {%
+googleortools}%
+\begin{APACrefauthors}%
+Google.%
+\end{APACrefauthors}%
+\unskip\
+\newblock
+\APACrefYearMonthDay{2020}{}{}.
+\newblock
+\APACrefbtitle {OR-Tools.} {Or-tools.}
+\newblock
+\begin{APACrefURL} \url{https://developers.google.com/optimization}
+  \end{APACrefURL}
+\newblock
+\APACrefnote{[Online; accessed 18-February-2020]}
+\PrintBackRefs{\CurrentBib}
+
+\bibitem [\protect \citeauthoryear {%
+Staton%
+, Wood%
+, Yang%
+, Heunen%
+\BCBL {}\ \BBA {} Kammar%
+}{%
+Staton%
+\ \protect \BOthers {.}}{%
+{\protect \APACyear {2016}}%
+}]{%
+staton2016semantics}
+\APACinsertmetastar {%
+staton2016semantics}%
+\begin{APACrefauthors}%
+Staton, S.%
+, Wood, F.%
+, Yang, H.%
+, Heunen, C.%
+\BCBL {}\ \BBA {} Kammar, O.%
+\end{APACrefauthors}%
+\unskip\
+\newblock
+\APACrefYearMonthDay{2016}{}{}.
+\newblock
+{\BBOQ}\APACrefatitle {Semantics for probabilistic programming: higher-order
+  functions, continuous distributions, and soft constraints} {Semantics for
+  probabilistic programming: higher-order functions, continuous distributions,
+  and soft constraints}.{\BBCQ}
+\newblock
+\BIn{} \APACrefbtitle {2016 31st Annual ACM/IEEE Symposium on Logic in Computer
+  Science (LICS)} {2016 31st annual acm/ieee symposium on logic in computer
+  science (lics)}\ (\BPGS\ 1--10).
+\PrintBackRefs{\CurrentBib}
+
+\end{thebibliography}
