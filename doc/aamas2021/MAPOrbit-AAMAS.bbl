@@ -1,0 +1,79 @@
+%%% -*-BibTeX-*-
+%%% Do NOT edit. File created by BibTeX with style
+%%% ACM-Reference-Format-Journals [18-Jan-2012].
+
+\begin{thebibliography}{3}
+
+%%% ====================================================================
+%%% NOTE TO THE USER: you can override these defaults by providing
+%%% customized versions of any of these macros before the \bibliography
+%%% command.  Each of them MUST provide its own final punctuation,
+%%% except for \shownote{}, \showDOI{}, and \showURL{}.  The latter two
+%%% do not use final punctuation, in order to avoid confusing it with
+%%% the Web address.
+%%%
+%%% To suppress output of a particular field, define its macro to expand
+%%% to an empty string, or better, \unskip, like this:
+%%%
+%%% \newcommand{\showDOI}[1]{\unskip}   % LaTeX syntax
+%%%
+%%% \def \showDOI #1{\unskip}           % plain TeX syntax
+%%%
+%%% ====================================================================
+
+\ifx \showCODEN    \undefined \def \showCODEN     #1{\unskip}     \fi
+\ifx \showDOI      \undefined \def \showDOI       #1{#1}\fi
+\ifx \showISBNx    \undefined \def \showISBNx     #1{\unskip}     \fi
+\ifx \showISBNxiii \undefined \def \showISBNxiii  #1{\unskip}     \fi
+\ifx \showISSN     \undefined \def \showISSN      #1{\unskip}     \fi
+\ifx \showLCCN     \undefined \def \showLCCN      #1{\unskip}     \fi
+\ifx \shownote     \undefined \def \shownote      #1{#1}          \fi
+\ifx \showarticletitle \undefined \def \showarticletitle #1{#1}   \fi
+\ifx \showURL      \undefined \def \showURL       {\relax}        \fi
+% The following commands are used for tagged output and should be
+% invisible to TeX
+\providecommand\bibfield[2]{#2}
+\providecommand\bibinfo[2]{#2}
+\providecommand\natexlab[1]{#1}
+\providecommand\showeprint[2][]{arXiv:#2}
+
+\bibitem[\protect\citeauthoryear{Blizard et~al\mbox{.}}{Blizard
+  et~al\mbox{.}}{1988}]%
+        {blizard1988multiset}
+\bibfield{author}{\bibinfo{person}{Wayne~D Blizard} {et~al\mbox{.}}}
+  \bibinfo{year}{1988}\natexlab{}.
+\newblock \showarticletitle{Multiset theory.}
+\newblock \bibinfo{journal}{\emph{Notre Dame Journal of formal logic}}
+  \bibinfo{volume}{30}, \bibinfo{number}{1} (\bibinfo{year}{1988}),
+  \bibinfo{pages}{36--66}.
+\newblock
+
+
+\bibitem[\protect\citeauthoryear{Google}{Google}{2020}]%
+        {googleortools}
+\bibfield{author}{\bibinfo{person}{Google}.} \bibinfo{year}{2020}\natexlab{}.
+\newblock \bibinfo{title}{OR-Tools}.
+\newblock
+\newblock
+\urldef\tempurl%
+\url{https://developers.google.com/optimization}
+\showURL{%
+\tempurl}
+\newblock
+\shownote{[Online; accessed 18-February-2020].}
+
+
+\bibitem[\protect\citeauthoryear{Staton, Wood, Yang, Heunen, and Kammar}{Staton
+  et~al\mbox{.}}{2016}]%
+        {staton2016semantics}
+\bibfield{author}{\bibinfo{person}{Sam Staton}, \bibinfo{person}{Frank Wood},
+  \bibinfo{person}{Hongseok Yang}, \bibinfo{person}{Chris Heunen}, {and}
+  \bibinfo{person}{Ohad Kammar}.} \bibinfo{year}{2016}\natexlab{}.
+\newblock \showarticletitle{Semantics for probabilistic programming:
+  higher-order functions, continuous distributions, and soft constraints}. In
+  \bibinfo{booktitle}{\emph{2016 31st Annual ACM/IEEE Symposium on Logic in
+  Computer Science (LICS)}}. IEEE, \bibinfo{pages}{1--10}.
+\newblock
+
+
+\end{thebibliography}
